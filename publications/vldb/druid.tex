@@ -756,45 +756,45 @@ purpose of the query. Please note:
   instead of load it into the Java heap
 \end{itemize}
 
-\begin{figure*}
+\begin{figure}
 \centering
-\includegraphics[width = 6in]{cluster_scan_rate}
+\includegraphics[width = 2.5in]{cluster_scan_rate}
 \caption{Druid cluster scan rate.}
 \label{fig:cluster_scan_rate}
-\end{figure*}
+\end{figure}
 
-\begin{figure*}
+\begin{figure}
 \centering
-\includegraphics[width = 6in]{core_scan_rate}
+\includegraphics[width = 2.5in]{core_scan_rate}
 \caption{Druid core scan rate.}
 \label{fig:core_scan_rate}
-\end{figure*}
+\end{figure}
 
-\begin{table*}
-  \centering
-  \caption{Druid Queries}
-  \label{tab:sql_queries}
-  \begin{verbatim}
-1 SELECT count(*) FROM _table_ WHERE timestamp >= ? AND timestamp < ? 
+% \begin{table*}
+%   \centering
+%   \caption{Druid Queries}
+%   \label{tab:sql_queries}
+%   \begin{verbatim}
+% 1 SELECT count(*) FROM _table_ WHERE timestamp >= ? AND timestamp < ?
 
-2 SELECT count(*), sum(metric1) FROM _table_ WHERE timestamp >= ? AND timestamp < ?  
+% 2 SELECT count(*), sum(metric1) FROM _table_ WHERE timestamp >= ? AND timestamp < ?
 
-3 SELECT count(*), sum(metric1), sum(metric2), sum(metric3), sum(metric4) FROM _table_
-  WHERE timestamp >= ? AND timestamp < ? 
+% 3 SELECT count(*), sum(metric1), sum(metric2), sum(metric3), sum(metric4) FROM _table_
+%   WHERE timestamp >= ? AND timestamp < ?
 
-4 SELECT high_card_dimension, count(*) AS cnt FROM _table_
-  WHERE timestamp >= ? AND timestamp < ?
-  GROUP BY high_card_dimension ORDER BY cnt limit 100 
+% 4 SELECT high_card_dimension, count(*) AS cnt FROM _table_
+%   WHERE timestamp >= ? AND timestamp < ?
+%   GROUP BY high_card_dimension ORDER BY cnt limit 100
 
-5 SELECT high_card_dimension, count(*) AS cnt, sum(metric1) FROM _table_
-  WHERE timestamp >= ? AND timestamp < ?
-  GROUP BY high_card_dimension ORDER BY cnt limit 100 
+% 5 SELECT high_card_dimension, count(*) AS cnt, sum(metric1) FROM _table_
+%   WHERE timestamp >= ? AND timestamp < ?
+%   GROUP BY high_card_dimension ORDER BY cnt limit 100
 
-6 SELECT high_card_dimension, count(*) AS cnt, sum(metric1), sum(metric2), sum(metric3), sum(metric4)
-  FROM _table_ WHERE timestamp >= ? AND timestamp < ?
-  GROUP BY high_card_dimension ORDER BY cnt limit 100 
-\end{verbatim}
-\end{table*}
+% 6 SELECT high_card_dimension, count(*) AS cnt, sum(metric1), sum(metric2), sum(metric3), sum(metric4)
+%   FROM _table_ WHERE timestamp >= ? AND timestamp < ?
+%   GROUP BY high_card_dimension ORDER BY cnt limit 100
+% \end{verbatim}
+% \end{table*}
 
 % \begin{enumerate}
 % \item \texttt{Select high\_card\_dimension, count(*), sum(metric1), sum(metric2), sum(metric3), sum(metric4) AS cnt from \_table\_ where timestamp $\geq$ ? and timestamp $<$ ? group by high\_card\_dimension order by cnt limit 100;}
