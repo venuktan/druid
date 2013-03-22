@@ -193,6 +193,7 @@ ggplot(data = dat, aes(
   geom_point() +
   scale_y_log10() +
   xlab("Number of Nodes")
+
 ggsave("cluster_scan_rate.pdf")
 
 
