@@ -12,6 +12,8 @@
 \usepackage{hyperref}
 \graphicspath{{figures/}}
 
+\hyphenation{metamarkets nelson}
+
 \begin{document}
 
 % ****************** TITLE ****************************************
@@ -67,7 +69,7 @@
 \alignauthor Fangjin Yang
 \email{fangjin@metamarkets.com}
 \alignauthor Eric Tschetter
-\email{cheddar@metamarkets.com}
+\email{eric@metamarkets.com}
 \alignauthor Gian Merlino
 \email{gian@metamarkets.com}
 \and
@@ -170,15 +172,16 @@ a Druid segment, consider the data set shown in Table~\ref{tab:sample_data}.
   \centering
   \caption{Sample data}
   \label{tab:sample_data}
-    \begin{tabular}{| l | l | l | l | l | l | l | l | l |}
+  \texttt{
+    \begin{tabular}{ l  l  l  l  l  l  l  l  l }
     \hline
-    Timestamp & Publisher & Advertiser & Gender & Country & Impressions & Clicks & Revenue \\ \hline
-    2011-01-01T01:00:00Z & bieberfever.com & google.com & Male & USA & 1800 & 25 & 15.70 \\ \hline
-    2011-01-01T01:00:00Z & bieberfever.com & google.com & Male & USA & 2912 & 42 & 29.18 \\ \hline
-    2011-01-01T02:00:00Z & ultratrimfast.com & google.com & Male & USA & 1953 & 17 & 17.31 \\ \hline
+    \textbf{Timestamp} & \textbf{Publisher} & \textbf{Advertiser} & \textbf{Gender} & \textbf{Country} & \textbf{Impressions} & \textbf{Clicks} & \textbf{Revenue} \\
+    2011-01-01T01:00:00Z & bieberfever.com & google.com & Male & USA & 1800 & 25 & 15.70 \\
+    2011-01-01T01:00:00Z & bieberfever.com & google.com & Male & USA & 2912 & 42 & 29.18 \\
+    2011-01-01T02:00:00Z & ultratrimfast.com & google.com & Male & USA & 1953 & 17 & 17.31 \\
     2011-01-01T02:00:00Z & ultratrimfast.com & google.com & Male & USA & 3194 & 170 & 34.01 \\
-    \hline
     \end{tabular}
+  }
 \end{table*}
 
 A segment is composed of multiple binary files, each representing a
@@ -236,7 +239,7 @@ duration of time than historical segments. Real-time segments contain
 recent data and are incrementally populated as new events are
 ingested. On a periodic basis, real-time segments are converted into
 historical segments. Additional details about this conversion process
-are given in section \ref{sec:tiers}.
+are given in Section~\ref{sec:tiers}.
 
 \section{Cluster}
 \label{sec:cluster}
@@ -246,7 +249,7 @@ Figure~\ref{fig:druid_cluster}.
 
 \begin{figure}
 \centering
-\includegraphics[width = 3in]{Druid_cluster}
+\includegraphics[width = 3in]{druid_cluster}
 \caption{An overview of a Druid cluster.}
 \label{fig:druid_cluster}
 \end{figure}
@@ -338,7 +341,7 @@ in Figure~\ref{fig:data-ingestion}.
 
 \begin{figure}
 \centering
-\includegraphics[width = 3in]{druid-04}
+\includegraphics[width = 3in]{druid_message_bus}
 \caption{Real-time data ingestion.}
 \label{fig:data-ingestion}
 \end{figure}
@@ -371,7 +374,7 @@ to a historical one. Figure~\ref{fig:data-durability} illustrates the process.
 
 \begin{figure}
 \centering
-\includegraphics[width = 3in]{druid-03}
+\includegraphics[width = 3in]{druid_realtime_flow}
 \caption{Real-time data durability}
 \label{fig:data-durability}
 \end{figure}
@@ -517,8 +520,7 @@ parameters. A typical query will contain the data source name, the
 granularity of the result data, the time range of interest, and the
 type of request.  A sample time series query is shown below:
 \begin{verbatim}
-{
-  "queryType"    : "timeseries",
+{ "queryType"    : "timeseries",
   "dataSource"   : "sample_data",
   "intervals"    : "2013-01-01/2013-01-02",
   "filter"       : {},
@@ -526,8 +528,7 @@ type of request.  A sample time series query is shown below:
   "aggregations" : [ {
     "type"      : "count",
     "fieldName" : "row",
-    "name"      : "row" } ]
-}
+    "name"      : "row" } ] }
 \end{verbatim}
 
 Certain query types will also support a filter set. A filter set is an
@@ -571,9 +572,7 @@ publishers as follows:
 The resulting integer array lends itself very well to
 compression. Generic compression algorithms on top of encodings are
 very common in column-stores. We opted to use the LZF \cite{liblzf2013} compression
-algorithm.
-
-We can leverage similar compression algorithms for numeric
+algorithm. We can leverage similar compression algorithms for numeric
 columns. For example, the clicks and revenue columns in
 Table~\ref{tab:sample_data} can also be expressed as individual
 arrays.
@@ -600,13 +599,13 @@ store this information in a binary array where the array indices
 represent our rows. If a particular publisher is seen in a certain
 row, that array index is marked as \texttt{1}. For example:
 \begin{verbatim}
-Bieberfever.com   -> rows [0, 1] -> [1][1][0][0]
-Ultratrimfast.com -> rows [2, 3] -> [0][0][1][1]
+bieberfever.com   -> rows [0, 1] -> [1][1][0][0]
+ultratrimfast.com -> rows [2, 3] -> [0][0][1][1]
 \end{verbatim}
 
-\texttt{Bieberfever.com} is seen in rows \texttt{0} and \texttt{1}. This mapping of column values
+\texttt{\href{http://bieberfever.com}{bieberfever.com}} is seen in rows \texttt{0} and \texttt{1}. This mapping of column values
 to row indices forms an inverted index \cite{tomasic1993performance}. If we want to know which
-rows contain \texttt{bieberfever.com} \texttt{OR} \texttt{ultratrimfast.com}, we can \texttt{OR} together
+rows contain {\ttfamily bieberfever.com} or {\ttfamily ultratrimfast.com}, we can \texttt{OR} together
 the \texttt{bieberfever.com} and \texttt{ultratrimfast.com} arrays.
 \begin{verbatim}
 [0][1][0][1] OR [1][0][1][0] = [1][1][1][1]
@@ -631,12 +630,12 @@ also resorted the data set rows to maximize compression.
 %Figure 4. CONCISE compression versus integer array
 In the unsorted case, the total CONCISE compressed size was 53, 451,
 144 bytes and the total integer array size was 127, 248, 520
-bytes. Overall, CONCISE compressed sets are about 42.005317\% less
+bytes. Overall, CONCISE compressed sets are about 42\% smaller
 than integer arrays.  In the sorted case, the total CONCISE compressed
 size was 43,832,884 bytes and the total integer array size was 127,
 248, 520 bytes. What is interesting to note is that after sorting,
 global compression only increased minimally. The total CONCISE set
-size to total integer array size is 34.448031\%. It is also
+size to total integer array size is 34\%. It is also
 interesting to note that as the cardinality of a dimension approaches
 the total number of rows in a data set, integer arrays actually
 require less space than CONCISE sets.
@@ -664,7 +663,7 @@ replicates in each tier of the historical compute cluster is fully
 configurable. Setups that require high levels of fault tolerance can
 be configured to have a high number of replicates. Replicates are
 assigned to compute nodes by coordination nodes using the same load
-distribution algorithm discussed in section \ref{sec:caching}. Conceptually,
+distribution algorithm discussed in Section~\ref{sec:caching}. Conceptually,
 broker nodes do not distinguish historical segments from their
 replicates. Broker nodes forward queries to the first node it finds
 that contains data for the query.
@@ -759,27 +758,43 @@ purpose of the query. Please note:
 
 \begin{figure}
 \centering
-\includegraphics[width = 3in]{cluster_scan_rate}
+\includegraphics[width = 2.5in]{cluster_scan_rate}
 \caption{Druid cluster scan rate.}
 \label{fig:cluster_scan_rate}
 \end{figure}
 
-\begin{table*}
-  \centering
-  \caption{Druid Queries}
-  \label{tab:sql_queries}
-    \begin{tabular}{| l | l |}
-    \hline
-    Query \# & Query \\ \hline
-    1 & Select count(*) from \_table\_ where timestamp $\geq$ ? and timestamp $<$ ?; \\ \hline
-    2 & Select count(*), sum(metric1) from \_table\_ where timestamp $\geq$ ? and timestamp $<$ ?; \\ \hline
-    3 & Select count(*), sum(metric1), sum(metric2), sum(metric3), sum(metric4) where timestamp $\geq$ ? and timestamp $<$ ?; \\ \hline
-    4 & Select high\_card\_dimension, count(*) AS cnt from \_table\_ where timestamp $\geq$ ? and timestamp $<$ ? group by high\_card\_dimension order by cnt limit 100; \\ \hline
-    5 & Select high\_card\_dimension, count(*), sum(metric1) AS cnt from \_table\_ where timestamp $\geq$ ? and timestamp $<$ ? group by high\_card\_dimension order by cnt limit 100; \\ \hline
-    6 & Select high\_card\_dimension, count(*), sum(metric1), sum(metric2), sum(metric3), sum(metric4) AS cnt from \_table\_ where timestamp $\geq$ ? and timestamp $<$ ? group by high\_card\_dimension order by cnt limit 100; \\
-    \hline
-    \end{tabular}
-\end{table*}
+\begin{figure}
+\centering
+\includegraphics[width = 2.5in]{core_scan_rate}
+\caption{Druid core scan rate.}
+\label{fig:core_scan_rate}
+\end{figure}
+
+% \begin{table*}
+%   \centering
+%   \caption{Druid Queries}
+%   \label{tab:sql_queries}
+%   \begin{verbatim}
+% 1 SELECT count(*) FROM _table_ WHERE timestamp >= ? AND timestamp < ?
+
+% 2 SELECT count(*), sum(metric1) FROM _table_ WHERE timestamp >= ? AND timestamp < ?
+
+% 3 SELECT count(*), sum(metric1), sum(metric2), sum(metric3), sum(metric4) FROM _table_
+%   WHERE timestamp >= ? AND timestamp < ?
+
+% 4 SELECT high_card_dimension, count(*) AS cnt FROM _table_
+%   WHERE timestamp >= ? AND timestamp < ?
+%   GROUP BY high_card_dimension ORDER BY cnt limit 100
+
+% 5 SELECT high_card_dimension, count(*) AS cnt, sum(metric1) FROM _table_
+%   WHERE timestamp >= ? AND timestamp < ?
+%   GROUP BY high_card_dimension ORDER BY cnt limit 100
+
+% 6 SELECT high_card_dimension, count(*) AS cnt, sum(metric1), sum(metric2), sum(metric3), sum(metric4)
+%   FROM _table_ WHERE timestamp >= ? AND timestamp < ?
+%   GROUP BY high_card_dimension ORDER BY cnt limit 100
+% \end{verbatim}
+% \end{table*}
 
 % \begin{enumerate}
 % \item \texttt{Select high\_card\_dimension, count(*), sum(metric1), sum(metric2), sum(metric3), sum(metric4) AS cnt from \_table\_ where timestamp $\geq$ ? and timestamp $<$ ? group by high\_card\_dimension order by cnt limit 100;}
