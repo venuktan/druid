@@ -12,6 +12,8 @@
 \usepackage{hyperref}
 \graphicspath{{figures/}}
 
+\hyphenation{metamarkets nelson}
+
 \begin{document}
 
 % ****************** TITLE ****************************************
@@ -67,7 +69,7 @@
 \alignauthor Fangjin Yang
 \email{fangjin@metamarkets.com}
 \alignauthor Eric Tschetter
-\email{cheddar@metamarkets.com}
+\email{eric@metamarkets.com}
 \alignauthor Gian Merlino
 \email{gian@metamarkets.com}
 \and
@@ -170,15 +172,16 @@ a Druid segment, consider the data set shown in Table~\ref{tab:sample_data}.
   \centering
   \caption{Sample data}
   \label{tab:sample_data}
-    \begin{tabular}{| l | l | l | l | l | l | l | l | l |}
+  \texttt{
+    \begin{tabular}{ l  l  l  l  l  l  l  l  l }
     \hline
-    Timestamp & Publisher & Advertiser & Gender & Country & Impressions & Clicks & Revenue \\ \hline
-    2011-01-01T01:00:00Z & bieberfever.com & google.com & Male & USA & 1800 & 25 & 15.70 \\ \hline
-    2011-01-01T01:00:00Z & bieberfever.com & google.com & Male & USA & 2912 & 42 & 29.18 \\ \hline
-    2011-01-01T02:00:00Z & ultratrimfast.com & google.com & Male & USA & 1953 & 17 & 17.31 \\ \hline
+    \textbf{Timestamp} & \textbf{Publisher} & \textbf{Advertiser} & \textbf{Gender} & \textbf{Country} & \textbf{Impressions} & \textbf{Clicks} & \textbf{Revenue} \\
+    2011-01-01T01:00:00Z & bieberfever.com & google.com & Male & USA & 1800 & 25 & 15.70 \\
+    2011-01-01T01:00:00Z & bieberfever.com & google.com & Male & USA & 2912 & 42 & 29.18 \\
+    2011-01-01T02:00:00Z & ultratrimfast.com & google.com & Male & USA & 1953 & 17 & 17.31 \\
     2011-01-01T02:00:00Z & ultratrimfast.com & google.com & Male & USA & 3194 & 170 & 34.01 \\
-    \hline
     \end{tabular}
+  }
 \end{table*}
 
 A segment is composed of multiple binary files, each representing a
@@ -600,13 +603,13 @@ store this information in a binary array where the array indices
 represent our rows. If a particular publisher is seen in a certain
 row, that array index is marked as \texttt{1}. For example:
 \begin{verbatim}
-Bieberfever.com   -> rows [0, 1] -> [1][1][0][0]
-Ultratrimfast.com -> rows [2, 3] -> [0][0][1][1]
+bieberfever.com   -> rows [0, 1] -> [1][1][0][0]
+ultratrimfast.com -> rows [2, 3] -> [0][0][1][1]
 \end{verbatim}
 
-\texttt{Bieberfever.com} is seen in rows \texttt{0} and \texttt{1}. This mapping of column values
+\texttt{\href{http://bieberfever.com}{bieberfever.com}} is seen in rows \texttt{0} and \texttt{1}. This mapping of column values
 to row indices forms an inverted index \cite{tomasic1993performance}. If we want to know which
-rows contain \texttt{bieberfever.com} \texttt{OR} \texttt{ultratrimfast.com}, we can \texttt{OR} together
+rows contain \texttt{bieberfever.com} or \texttt{ultratrimfast.com}, we can \texttt{OR} together
 the \texttt{bieberfever.com} and \texttt{ultratrimfast.com} arrays.
 \begin{verbatim}
 [0][1][0][1] OR [1][0][1][0] = [1][1][1][1]
