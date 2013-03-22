@@ -164,12 +164,12 @@ The fundamental storage unit in Druid is the segment. Distribution and
 replication in Druid are always done at a segment level. Segments
 encapsulate a partition of a larger transactional data set. To better
 understand how a typical row/column collection of data translates into
-a Druid segment, consider the data set shown in Table~\ref{table:sample_data}.
+a Druid segment, consider the data set shown in Table~\ref{tab:sample_data}.
 
 \begin{table*}
   \centering
   \caption{Sample data}
-  \label{table:sample_data}
+  \label{tab:sample_data}
     \begin{tabular}{| l | l | l | l | l | l | l | l | l |}
     \hline
     Timestamp & Publisher & Advertiser & Gender & Country & Impressions & Clicks & Revenue \\ \hline
@@ -182,7 +182,7 @@ a Druid segment, consider the data set shown in Table~\ref{table:sample_data}.
 \end{table*}
 
 A segment is composed of multiple binary files, each representing a
-column of a data set. The data set in Table~\ref{table:sample_data} consists of 8 distinct
+column of a data set. The data set in Table~\ref{tab:sample_data} consists of 8 distinct
 columns, one of which is the timestamp column. Druid always requires a
 timestamp column because it (currently) only operates with event-based
 data. Segments always represent some interval of time and each column
@@ -191,7 +191,7 @@ interval. Since segments always contain data for a time range, it is
 logical that Druid partitions data into smaller chunks based on the
 timestamp value. In other words, segments can be thought of as blocks
 of data that represent a certain granularity of time. For example, if
-we wanted to shard the data in Table~\ref{table:sample_data} to an hourly granularity, the
+we wanted to shard the data in Table~\ref{tab:sample_data} to an hourly granularity, the
 partitioning algorithm would result in two segments, one representing
 each hour of 2011-01-01. Similarly, if we sharded the data to a daily
 granularity, we would create a single segment for 2011-01-01.
@@ -549,12 +549,12 @@ time can introduce performance degradations as high as 250\% \cite{bear2012verti
 Druid has multiple column types to represent the various column value
 formats. Depending on the column type, different compression methods
 are used to reduce the cost of storing a column in memory and on
-disk. In the example given in Table~\ref{table:sample_data}, the
+disk. In the example given in Table~\ref{tab:sample_data}, the
 publisher, advertiser, gender, and country columns only contain
 strings. String columns can be dictionary encoded. Dictionary encoding
 is a common method to compress data and has been used in other data
 stores such as Powerdrill \cite{hall2012processing}. In the example in
-Table~\ref{table:sample_data}, we can map each publisher to an unique
+Table~\ref{tab:sample_data}, we can map each publisher to an unique
 integer identifier.
 \begin{verbatim}
 bieberfever.com   -> 0
@@ -575,7 +575,7 @@ algorithm.
 
 We can leverage similar compression algorithms for numeric
 columns. For example, the clicks and revenue columns in
-Table~\ref{table:sample_data} can also be expressed as individual
+Table~\ref{tab:sample_data} can also be expressed as individual
 arrays.
 \begin{verbatim}
 Clicks  -> [25, 42, 17, 170]
@@ -593,8 +593,8 @@ operations of indices in their compressed form is both performance and
 space efficient.
 
 Let us consider the publisher column in
-Table~\ref{table:sample_data}. For each unique publisher in
-Table~\ref{table:sample_data}, we can form some representation
+Table~\ref{tab:sample_data}. For each unique publisher in
+Table~\ref{tab:sample_data}, we can form some representation
 indicating which table rows a particular publisher is seen. We can
 store this information in a binary array where the array indices
 represent our rows. If a particular publisher is seen in a certain
@@ -619,7 +619,7 @@ encoding. Well known algorithms include Byte-aligned Bitmap Code \cite{antoshenk
 Word-Aligned Hybrid (WAH) code \cite{wu2006optimizing}, and Partitioned Word-Aligned
 Hybrid (PWAH) compression \cite{van2011memory}. Druid opted to use the CONCISE
 algorithm \cite{colantonio2010concise} as it can outperform WAH by reducing the size of the
-compressed bitmaps by up to 50\%.  Figure 4 illustrates the number of
+compressed bitmaps by up to 50\%.  Figure~\ref{fig:cluster_scan_rate} illustrates the number of
 bytes using CONCISE compression versus using an integer array. The
 results were generated on a cc2.8xlarge system with a single thread,
 2G heap, 512m young gen, and a forced GC between each run. The data
@@ -743,7 +743,7 @@ disk space. Collectively, the cluster comprised of 1600 cores, 6TB or
 RAM, fast Ethernet and more than enough disk space.
 
 On simple aggregation queries, the benchmarks of the 100 node cluster
-are shown in Tables 2 - 4. SQL statements are included to describe the
+are shown in Tables~\ref{tab:sql_queries}-\ref{tab:?}. SQL statements are included to describe the
 purpose of the query. Please note:
 \begin{itemize}
 \item The timestamp range encompasses all data.
@@ -767,7 +767,7 @@ purpose of the query. Please note:
 \begin{table*}
   \centering
   \caption{Druid Queries}
-  \label{table:sql_queries}
+  \label{tab:sql_queries}
     \begin{tabular}{| l | l |}
     \hline
     Query \# & Query \\ \hline
@@ -785,7 +785,7 @@ purpose of the query. Please note:
 % \item \texttt{Select high\_card\_dimension, count(*), sum(metric1), sum(metric2), sum(metric3), sum(metric4) AS cnt from \_table\_ where timestamp $\geq$ ? and timestamp $<$ ? group by high\_card\_dimension order by cnt limit 100;}
 % \end{enumerate}
 
-The first query listed in Table 2 is just a count and we see the best
+The first query listed in Table~\ref{tab:sql_queries} is just a count and we see the best
 performance of our system with it, achieving scan rates of 33M
 rows/second/core.  At first glance it looks like fewer nodes might
 actually be outperforming more nodes in the rows/sec/core metric, but
@@ -800,13 +800,13 @@ are idle.
 
 When we include more aggregations we see performance degrade.  This is
 because of the column-oriented storage format Druid employs.  For the
-count(*) queries, it only has to check the timestamp column to satisfy
+\texttt{count(*)} queries, it only has to check the timestamp column to satisfy
 the where clause.  As we add metrics, it has to also load those metric
 values and scan over them, increasing the amount of memory scanned.
-Table 5-7 shows the results for top 100 queries on our high
+Table~\ref{tab:?}-\ref{tab:?} shows the results for top 100 queries on our high
 cardinality dimension.
 
-In Tables 5-7, we see the superior performance of the in-memory
+In Tables~\ref{tab:?}-\ref{tab:?}, we see the superior performance of the in-memory
 representation when doing top lists versus when doing simple
 time-based aggregations.  This is an implementation detail, but it's
 largely because of the differences in accessing simple in-memory
