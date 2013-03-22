@@ -1,16 +1,18 @@
 library(stringr)
 library(xtable)
 library(plyr)
-foo <- function(x, ncol){
+library(ggplot2)
+
+stringToDF <- function(x, ncol){
   m <- matrix(unlist(str_split(x, "\t|\n")), ncol = ncol, byrow = TRUE)
   df <- data.frame(m[-1, ], stringsAsFactors = FALSE)
   names(df) <- m[1, ]
   df
 }
 
-print(xtable(foo(x, 3)), include.rownames = FALSE)
+##print(xtable(stringToDF(x, 3)), include.rownames = FALSE)
 
-foo <- function(x, query){
+stringToDF2 <- function(x, query){
   m <- matrix(unlist(str_split(x, "\t|\n")), ncol = 3, byrow = TRUE)
   df <- data.frame(m[-1, ], stringsAsFactors = FALSE)
   names(df) <- m[1, ]
@@ -21,8 +23,6 @@ foo <- function(x, query){
   df2$query <- query
   cbind(df, df2)
 }
-
-foo(x2, "Query1")
 
 x2 <- "Cluster
 Cluster scan rate (rows/sec)
@@ -177,10 +177,9 @@ Core scan rate
 
 dat <- ldply(2:7, function(i){
   df <- eval(parse(text = paste("x", i, sep = "")))
-  foo(df, paste("Query", i - 1, sep = " "))
+  stringToDF2(df, paste("Query", i - 1, sep = " "))
 })
 
-library(ggplot2)
 ggplot(data = dat, aes(
          x = as.numeric(str_extract(nodes, "[0-9]+")),
          y = `Cluster scan rate (rows/sec)`,

@@ -236,7 +236,7 @@ duration of time than historical segments. Real-time segments contain
 recent data and are incrementally populated as new events are
 ingested. On a periodic basis, real-time segments are converted into
 historical segments. Additional details about this conversion process
-are given in section \ref{sec:tiers}.
+are given in Section~\ref{sec:tiers}.
 
 \section{Cluster}
 \label{sec:cluster}
@@ -664,7 +664,7 @@ replicates in each tier of the historical compute cluster is fully
 configurable. Setups that require high levels of fault tolerance can
 be configured to have a high number of replicates. Replicates are
 assigned to compute nodes by coordination nodes using the same load
-distribution algorithm discussed in section \ref{sec:caching}. Conceptually,
+distribution algorithm discussed in Section~\ref{sec:caching}. Conceptually,
 broker nodes do not distinguish historical segments from their
 replicates. Broker nodes forward queries to the first node it finds
 that contains data for the query.
