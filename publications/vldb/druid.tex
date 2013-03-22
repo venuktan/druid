@@ -520,8 +520,7 @@ parameters. A typical query will contain the data source name, the
 granularity of the result data, the time range of interest, and the
 type of request.  A sample time series query is shown below:
 \begin{verbatim}
-{
-  "queryType"    : "timeseries",
+{ "queryType"    : "timeseries",
   "dataSource"   : "sample_data",
   "intervals"    : "2013-01-01/2013-01-02",
   "filter"       : {},
@@ -529,8 +528,7 @@ type of request.  A sample time series query is shown below:
   "aggregations" : [ {
     "type"      : "count",
     "fieldName" : "row",
-    "name"      : "row" } ]
-}
+    "name"      : "row" } ] }
 \end{verbatim}
 
 Certain query types will also support a filter set. A filter set is an
@@ -574,9 +572,7 @@ publishers as follows:
 The resulting integer array lends itself very well to
 compression. Generic compression algorithms on top of encodings are
 very common in column-stores. We opted to use the LZF \cite{liblzf2013} compression
-algorithm.
-
-We can leverage similar compression algorithms for numeric
+algorithm. We can leverage similar compression algorithms for numeric
 columns. For example, the clicks and revenue columns in
 Table~\ref{tab:sample_data} can also be expressed as individual
 arrays.
@@ -609,7 +605,7 @@ ultratrimfast.com -> rows [2, 3] -> [0][0][1][1]
 
 \texttt{\href{http://bieberfever.com}{bieberfever.com}} is seen in rows \texttt{0} and \texttt{1}. This mapping of column values
 to row indices forms an inverted index \cite{tomasic1993performance}. If we want to know which
-rows contain \texttt{bieberfever.com} or \texttt{ultratrimfast.com}, we can \texttt{OR} together
+rows contain {\ttfamily bieberfever.com} or {\ttfamily ultratrimfast.com}, we can \texttt{OR} together
 the \texttt{bieberfever.com} and \texttt{ultratrimfast.com} arrays.
 \begin{verbatim}
 [0][1][0][1] OR [1][0][1][0] = [1][1][1][1]
@@ -634,12 +630,12 @@ also resorted the data set rows to maximize compression.
 %Figure 4. CONCISE compression versus integer array
 In the unsorted case, the total CONCISE compressed size was 53, 451,
 144 bytes and the total integer array size was 127, 248, 520
-bytes. Overall, CONCISE compressed sets are about 42.005317\% less
+bytes. Overall, CONCISE compressed sets are about 42\% smaller
 than integer arrays.  In the sorted case, the total CONCISE compressed
 size was 43,832,884 bytes and the total integer array size was 127,
 248, 520 bytes. What is interesting to note is that after sorting,
 global compression only increased minimally. The total CONCISE set
-size to total integer array size is 34.448031\%. It is also
+size to total integer array size is 34\%. It is also
 interesting to note that as the cardinality of a dimension approaches
 the total number of rows in a data set, integer arrays actually
 require less space than CONCISE sets.
@@ -778,17 +774,19 @@ purpose of the query. Please note:
   \centering
   \caption{Druid Queries}
   \label{tab:sql_queries}
-    \begin{tabular}{| l | l |}
-    \hline
-    Query \# & Query \\ \hline
-    1 & Select count(*) from \_table\_ where timestamp $\geq$ ? and timestamp $<$ ?; \\ \hline
-    2 & Select count(*), sum(metric1) from \_table\_ where timestamp $\geq$ ? and timestamp $<$ ?; \\ \hline
-    3 & Select count(*), sum(metric1), sum(metric2), sum(metric3), sum(metric4) where timestamp $\geq$ ? and timestamp $<$ ?; \\ \hline
-    4 & Select high\_card\_dimension, count(*) AS cnt from \_table\_ where timestamp $\geq$ ? and timestamp $<$ ? group by high\_card\_dimension order by cnt limit 100; \\ \hline
-    5 & Select high\_card\_dimension, count(*), sum(metric1) AS cnt from \_table\_ where timestamp $\geq$ ? and timestamp $<$ ? group by high\_card\_dimension order by cnt limit 100; \\ \hline
-    6 & Select high\_card\_dimension, count(*), sum(metric1), sum(metric2), sum(metric3), sum(metric4) AS cnt from \_table\_ where timestamp $\geq$ ? and timestamp $<$ ? group by high\_card\_dimension order by cnt limit 100; \\
-    \hline
-    \end{tabular}
+  \begin{verbatim}
+1 SELECT count(*)               FROM _table_ WHERE timestamp >= ? AND timestamp < ? 
+2 SELECT count(*), sum(metric1) FROM _table_ WHERE timestamp >= ? AND timestamp < ?  
+3 SELECT count(*), sum(metric1), sum(metric2), sum(metric3), sum(metric4) FROM _table_
+  WHERE timestamp >= ? AND timestamp < ? 
+4 SELECT high_card_dimension, count(*) AS cnt FROM _table_
+  WHERE timestamp >= ? AND timestamp < ? GROUP BY high_card_dimension ORDER BY cnt limit 100 
+5 SELECT high_card_dimension, count(*) AS cnt, sum(metric1) FROM _table_
+  WHERE timestamp >= ? AND timestamp < ? GROUP BY high_card_dimension ORDER BY cnt limit 100 
+6 SELECT high_card_dimension, count(*) AS cnt, sum(metric1), sum(metric2), sum(metric3), sum(metric4)
+  FROM _table_
+  WHERE timestamp >= ? AND timestamp < ? GROUP BY high_card_dimension ORDER BY cnt limit 100 
+\end{verbatim}
 \end{table*}
 
 % \begin{enumerate}
