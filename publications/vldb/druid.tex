@@ -8,7 +8,8 @@
 \usepackage{graphicx}
 \usepackage{balance}  % for  \balance command ON LAST PAGE  (only there!)
 \usepackage{fontspec}
-\setmainfont{Times}
+%\setmainfont{Times}
+\usepackage{hyperref}
 \graphicspath{{figures/}}
 
 \begin{document}
@@ -72,7 +73,7 @@
 \and
 \alignauthor Nelson Ray
 \email{nelson@metamarkets.com}
-\alignauthor Xavier L\'{e}aut\'{e}
+\alignauthor Xavier Léauté
 \email{xavier@metamarkets.com}
 \alignauthor Deep Ganguli
 \email{deep@metamarkets.com}
@@ -81,7 +82,7 @@
 % author on the opening page (as the 'third row') but we ask,
 % for aesthetic reasons that you place these 'additional authors'
 % in the \additional authors block, viz.
-\additionalauthors{Additional authors: Michael Driscoll (Metamarkets, {\texttt{mike@metamarkets.com}})}
+\additionalauthors{Michael Driscoll (Metamarkets, \linebreak[0]{\ttfamily{mike@metamarkets.com}})}
 \date{21 March 2013}
 % Just remember to make sure that the TOTAL number of authors
 % is the number that will appear on the first page PLUS the
@@ -125,7 +126,7 @@ data and thousands of cores. It is a highly available system designed
 to run on commodity hardware with no downtime in the face of failures,
 data imports or software updates. We have been building Druid over the
 course of the last two years and it is the core engine of the
-Metamarkets’ technology stack.
+Metamarkets technology stack.
 
 In many ways, Druid shares similarities with distributed databases
 \cite{melnik2010dremel}, main-memory databases \cite{farber2012sap}, and widely-known distributed data
@@ -149,15 +150,16 @@ paper, we make the following contributions to academia:
   data
 \item We present experiments benchmarking Druid’s performance
 \end{itemize}
-The format of the paper is as follows: Section 2 describes the Druid
-data model. Section 3 presents an overview of the components of a
-Druid cluster. Section 4 outlines the query API. Section 5 describes
-data storage format in greater detail. Section 6 discusses Druid
-robustness and failure responsiveness. Section 7 provides our
-benchmarks. Section 8 lists the related work and Section 9 presents
+The format of the paper is as follows: Section \ref{sec:data-model} describes the Druid
+data model. Section \ref{sec:cluster} presents an overview of the components of a
+Druid cluster. Section \ref{sec:query-api} outlines the query API. Section \ref{sec:storage} describes
+data storage format in greater detail. Section \ref{sec:robustness} discusses Druid
+robustness and failure responsiveness. Section \ref{sec:benchmarks} provides our
+benchmarks. Section \ref{sec:related} lists the related work and Section \ref{sec:conclusions} presents
 our conclusions.
 
 \section{Data Model}
+\label{sec:data-model}
 The fundamental storage unit in Druid is the segment. Distribution and
 replication in Druid are always done at a segment level. Segments
 encapsulate a partition of a larger transactional data set. To better
@@ -234,9 +236,10 @@ duration of time than historical segments. Real-time segments contain
 recent data and are incrementally populated as new events are
 ingested. On a periodic basis, real-time segments are converted into
 historical segments. Additional details about this conversion process
-are given in Section 3.3.
+are given in section \ref{sec:tiers}.
 
 \section{Cluster}
+\label{sec:cluster}
 A Druid cluster consists of different types of nodes, each performing
 a specific function. The composition of a Druid cluster is shown in
 Figure~\ref{fig:druid_cluster}.
@@ -312,6 +315,7 @@ Zookeeper) that it is serving the segment. At this point, the segment
 is queryable.
 
 \subsection{Tiers}
+\label{sec:tiers}
 Compute nodes can be grouped in different tiers, where all nodes in a
 given tier are identically configured. Different performance and
 fault-tolerance parameters can be set for each tier. The purpose of
@@ -431,18 +435,21 @@ forwards the query down to the respective nodes.
 
 
 \subsubsection{Caching}
-Broker nodes employ a distributed cache with a LRU \cite{o1993lru, kim2001lrfu} cache
-invalidation strategy. The broker cache stores per segment
-results. Recall that each time a broker node receives a query, it
-first maps the query to a set of segments. A subset of these segment
-results may already exist in the cache and the results can be directly
-pulled from the cache. For any segment results that do not exist in
-the cache, the broker node will forward the query to the compute
-nodes. Once the compute nodes return their results, the broker will
-store those results in the cache. Real-time segments are never cached
-and hence requests for real-time data will always be forwarded to
-real-time nodes. Real-time data is perpetually changing and caching
-the results would be unreliable.
+\label{sec:caching}
+Broker nodes employ a distributed cache with a LRU \cite{o1993lru,
+kim2001lrfu} cache invalidation strategy. The broker cache stores
+per segment results. The cache can be local to each broker node or
+shared across multiple nodes using an external distributed cache
+such as memcached. Recall that each time a broker node receives a
+query, it first maps the query to a set of segments. A subset of
+these segment results may already exist in the cache and the results
+can be directly pulled from the cache. For any segment results that
+do not exist in the cache, the broker node will forward the query
+to the compute nodes. Once the compute nodes return their results,
+the broker will store those results in the cache. Real-time segments
+are never cached and hence requests for real-time data will always
+be forwarded to real-time nodes. Real-time data is perpetually
+changing and caching the results would be unreliable.
 
 
 \subsection{Coordination (Master) Nodes}
@@ -502,6 +509,7 @@ into account the segment data source, recency, and size. The exact
 details of the algorithm are beyond the scope of this paper.
 
 \section{Query API}
+\label{sec:query-api}
 Queries to Druid are made in the form of POST requests. All queryable
 Druid nodes share the same query API. The body of the POST request is
 a JSON object containing key-value pairs specifying various query
@@ -510,12 +518,15 @@ granularity of the result data, the time range of interest, and the
 type of request.  A sample time series query is shown below:
 \begin{verbatim}
 {
-	"queryType":"timeseries",
-	"dataSource":"sample_data",
-	"filter":{},
-	"granularity":"day",
-	"aggregations":[{"type":"count","fieldName":"row","name":"row"}],
-	"intervals":"2013-01-01/2013-01-02"
+  "queryType"    : "timeseries",
+  "dataSource"   : "sample_data",
+  "intervals"    : "2013-01-01/2013-01-02",
+  "filter"       : {},
+  "granularity"  : "day",
+  "aggregations" : [ {
+    "type"      : "count",
+    "fieldName" : "row",
+    "name"      : "row" } ]
 }
 \end{verbatim}
 
@@ -525,6 +536,7 @@ pairs. Support for arbitrary filter sets enables flexibility and
 provides the functionality to deeply explore data.
 
 \section{Storage}
+\label{sec:storage}
 Druid is a column-oriented data store. When considering aggregates
 over a large number of events, the advantages storing data as columns
 rather than rows are well documented \cite{cattell2011scalable}. Column storage allows for
@@ -545,7 +557,7 @@ stores such as Powerdrill \cite{hall2012processing}. In the example in
 Table~\ref{table:sample_data}, we can map each publisher to an unique
 integer identifier.
 \begin{verbatim}
-bieberfever.com -> 0
+bieberfever.com   -> 0
 ultratrimfast.com -> 1
 \end{verbatim}
 This mapping allows us to represent the publisher column as an integer
@@ -566,7 +578,7 @@ columns. For example, the clicks and revenue columns in
 Table~\ref{table:sample_data} can also be expressed as individual
 arrays.
 \begin{verbatim}
-Clicks -> [25, 42, 17, 170]
+Clicks  -> [25, 42, 17, 170]
 Revenue -> [15.70, 29.18, 17.31, 34.01]
 \end{verbatim}
 In this case we compress the raw values as opposed to their dictionary
@@ -588,7 +600,7 @@ store this information in a binary array where the array indices
 represent our rows. If a particular publisher is seen in a certain
 row, that array index is marked as ``1''. For example:
 \begin{verbatim}
-Bieberfever.com -> rows [0, 1] -> [1][1][0][0]
+Bieberfever.com   -> rows [0, 1] -> [1][1][0][0]
 Ultratrimfast.com -> rows [2, 3] -> [0][0][1][1]
 \end{verbatim}
 
@@ -641,6 +653,7 @@ performance is critical. At Metamarkets, we commonly use a
 memory-mapped storage engine.
 
 \section{Robustness and Fault-Tolerance}
+\label{sec:robustness}
 To achieve high system availability and data durability, Druid employs
 several fault recovery techniques. Druid has no single point of
 failure.
@@ -651,7 +664,7 @@ replicates in each tier of the historical compute cluster is fully
 configurable. Setups that require high levels of fault tolerance can
 be configured to have a high number of replicates. Replicates are
 assigned to compute nodes by coordination nodes using the same load
-distribution algorithm discussed in section 3.5.2. Conceptually,
+distribution algorithm discussed in section \ref{sec:caching}. Conceptually,
 broker nodes do not distinguish historical segments from their
 replicates. Broker nodes forward queries to the first node it finds
 that contains data for the query.
@@ -714,6 +727,7 @@ nodes in batches is generally not supported as it may destroy all
 copies of a segment, which would lead to data loss.
 
 \section{Performance Benchmarks}
+\label{sec:benchmarks}
 To benchmark Druid performance, we created a large test cluster with
 6TB of uncompressed data, representing tens of billions of fact
 rows. The data set contained more than a dozen dimensions, with
@@ -800,6 +814,7 @@ pointers, versus scanning and seeking through a flattened data
 structure (even though it is already largely paged into memory).
 
 \section{Related Work}
+\label{sec:related}
 Cattell \cite{cattell2011scalable} maintains a great summary about existing Scalable SQL and
 NoSQL data stores. In the landscape of distributed data stores, Druid
 feature-wise sits somewhere between Google’s Dremel \cite{melnik2010dremel} and Powerdrill
@@ -836,6 +851,7 @@ inverted indices to perform faster filters also exist in other data
 stores \cite{macnicol2004sybase}.
 
 \section{Conclusions}
+\label{sec:conclusions}
 In this paper, we presented Druid, a distributed, column-oriented,
 real-time analytical data store. Druid is a highly customizable
 solution that is optimized for fast query latencies. Druid ingests
@@ -847,6 +863,7 @@ algorithms we’ve developed for Druid and how other systems may plug
 into Druid to achieve powerful use cases.
 
 \section{Acknowledgements}
+\label{sec:acknowledgements}
 Druid could not have been built without the help of many great
 engineers at Metamarkets and in the community. We want to thank Steve
 Harris, Jaypal Sethi, Danny Yuan, Jae Hyeon Bae, Paul Baclace, Dave
