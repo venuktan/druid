@@ -598,16 +598,16 @@ Table~\ref{tab:sample_data}, we can form some representation
 indicating which table rows a particular publisher is seen. We can
 store this information in a binary array where the array indices
 represent our rows. If a particular publisher is seen in a certain
-row, that array index is marked as ``1''. For example:
+row, that array index is marked as \texttt{1}. For example:
 \begin{verbatim}
 Bieberfever.com   -> rows [0, 1] -> [1][1][0][0]
 Ultratrimfast.com -> rows [2, 3] -> [0][0][1][1]
 \end{verbatim}
 
-Bieberfever.com is seen in rows 0 and 1. This mapping of column values
+\texttt{Bieberfever.com} is seen in rows \texttt{0} and \texttt{1}. This mapping of column values
 to row indices forms an inverted index \cite{tomasic1993performance}. If we want to know which
-rows contain bieberfever.com OR ultratrimfast.com, we can OR together
-the bieberfever.com and ultratrimfast.com arrays.
+rows contain \texttt{bieberfever.com} \texttt{OR} \texttt{ultratrimfast.com}, we can \texttt{OR} together
+the \texttt{bieberfever.com} and \texttt{ultratrimfast.com} arrays.
 \begin{verbatim}
 [0][1][0][1] OR [1][0][1][0] = [1][1][1][1]
 \end{verbatim}
