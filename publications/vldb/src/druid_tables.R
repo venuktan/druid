@@ -182,7 +182,7 @@ dat <- ldply(2:7, function(i){
 
 ggplot(data = dat, aes(
          x = as.numeric(str_extract(nodes, "[0-9]+")),
-         y = `Cluster scan rate (rows/sec)`,
+         y = `Cluster scan rate (rows/sec)` / 1e9,
          shape = configuration,
          color = query,
          size = factor(cores, levels = c("4-core", "15-core"))
@@ -191,9 +191,27 @@ ggplot(data = dat, aes(
   scale_color_discrete(guide = guide_legend(title = "Query")) +
   scale_shape_discrete(guide = guide_legend(title = "Configuration")) + 
   geom_point() +
-  scale_y_log10() +
-  xlab("Number of Nodes")
+  scale_y_log10(breaks = 2^(-1:5)) +
+  xlab("Number of Nodes") +
+  ylab("Cluster Scan Rate (billion rows/sec.)")
 
-ggsave("cluster_scan_rate.pdf")
+ggsave("../figures/cluster_scan_rate.pdf")
+
+ggplot(data = dat, aes(
+         x = as.numeric(str_extract(nodes, "[0-9]+")),
+         y = `Core scan rate` / 1e6,
+         shape = configuration,
+         color = query,
+         size = factor(cores, levels = c("4-core", "15-core"))
+         )) +
+  scale_size_manual(values = c(3, 6), guide = guide_legend(title = "Cores Per Node")) +
+  scale_color_discrete(guide = guide_legend(title = "Query")) +
+  scale_shape_discrete(guide = guide_legend(title = "Configuration")) + 
+  geom_point() +
+  scale_y_log10(breaks = 2^(-1:5)) +
+  xlab("Number of Nodes") +
+  ylab("Core Scan Rate (million rows/sec.)")
+
+ggsave("../figures/core_scan_rate.pdf")
 
 
