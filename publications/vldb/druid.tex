@@ -188,7 +188,7 @@ A segment is composed of multiple binary files, each representing a
 column of a data set. The data set in Table~\ref{tab:sample_data} consists of 8 distinct
 columns, one of which is the timestamp column. Druid always requires a
 timestamp column because it (currently) only operates with event-based
-data. Segments always represent some interval of time and each column
+data. Segments always represent some time interval and each column
 file contains the specific values for that column over the time
 interval. Since segments always contain data for a time range, it is
 logical that Druid partitions data into smaller chunks based on the
@@ -207,7 +207,7 @@ hour. Depending on the data volume, only sharding on the time
 dimension may still result in segments that are too large to
 manage. To create more operable partition chunks, Druid may
 additionally shard data based on other factors such as dimension
-cardinality. Hence, segments are uniquely identified by a data source
+cardinality. Each shard results in a segment and hence, segments are uniquely identified by a data source
 id describing the data, the time interval of the data, a version
 indicating when the segment was created, and a shard partition number.
 
@@ -239,7 +239,7 @@ duration of time than historical segments. Real-time segments contain
 recent data and are incrementally populated as new events are
 ingested. On a periodic basis, real-time segments are converted into
 historical segments. Additional details about this conversion process
-are given in Section~\ref{sec:tiers}.
+are given in Section~\ref{sec:realtime}.
 
 \section{Cluster}
 \label{sec:cluster}
@@ -317,7 +317,7 @@ compute node completes processing a segment, the node announces (in
 Zookeeper) that it is serving the segment. At this point, the segment
 is queryable.
 
-\subsection{Tiers}
+\subsubsection{Tiers}
 \label{sec:tiers}
 Compute nodes can be grouped in different tiers, where all nodes in a
 given tier are identically configured. Different performance and
@@ -331,6 +331,7 @@ can also be created with much less powerful backing hardware. The
 “cold” cluster would only contain less frequently accessed segments.
 
 \subsection{Real-time Nodes}
+\label{sec:realtime}
 Real-time nodes encapsulate the functionality to ingest and query
 real-time data streams. Data indexed via these nodes is immediately
 available for querying. Real-time nodes are a consumer of data and
