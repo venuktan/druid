@@ -134,10 +134,9 @@ In many ways, Druid shares similarities with distributed databases
 \cite{melnik2010dremel}, main-memory databases \cite{farber2012sap}, and widely-known distributed data
 stores such as BigTable \cite{chang2008bigtable}, Dynamo \cite{decandia2007dynamo}, and Cassandra \cite{lakshman2010cassandra}. Unlike
 most traditional data stores, Druid operates mainly on read-only data
-and has limited functionality for writes. Druid is highly optimized
-for fast aggregates over large-scale transactional data and provide a
-means for deep exploration of the data. Druid is highly configurable
-and allows for users to adjust levels of fault tolerance and
+and has limited functionality for writes. The system is highly optimized
+for large-scale transactional data aggregation and arbitrarily deep data exploration. Druid is very configurable
+and allows users to adjust levels of fault tolerance and
 performance.
 
 Druid builds on the ideas of other distributed data stores, real-time
@@ -157,7 +156,7 @@ data model. Section \ref{sec:cluster} presents an overview of the components of 
 Druid cluster. Section \ref{sec:query-api} outlines the query API. Section \ref{sec:storage} describes
 data storage format in greater detail. Section \ref{sec:robustness} discusses Druid
 robustness and failure responsiveness. Section \ref{sec:benchmarks} provides our
-benchmarks. Section \ref{sec:related} lists the related work and Section \ref{sec:conclusions} presents
+performance benchmarks. Section \ref{sec:related} lists the related work and Section \ref{sec:conclusions} presents
 our conclusions.
 
 \section{Data Model}
@@ -170,7 +169,7 @@ a Druid segment, consider the data set shown in Table~\ref{tab:sample_data}.
 
 \begin{table*}
   \centering
-  \caption{Sample data}
+  \caption{Sample Druid data}
   \label{tab:sample_data}
   \texttt{
     \begin{tabular}{ l  l  l  l  l  l  l  l  l }
@@ -203,11 +202,11 @@ Partitioning the data based on granularity buckets allows users to
 fine tune the degree of parallelization they want in Druid. A data set
 representing a year’s worth of data may be bucketed by day, and a data
 set representing only a day’s worth of day may be partitioned by
-hour. Depending on the data volume, only sharding on the time
+hour. Depending on the data volume, sharding only on the time
 dimension may still result in segments that are too large to
 manage. To create more operable partition chunks, Druid may
 additionally shard data based on other factors such as dimension
-cardinality. Each shard results in a segment and hence, segments are uniquely identified by a data source
+cardinality. Each shard creates a segment and hence, segments are uniquely identified by a data source
 id describing the data, the time interval of the data, a version
 indicating when the segment was created, and a shard partition number.
 
@@ -220,11 +219,10 @@ be similarly classified as being either real-time or historical.
 Historical segments are immutable and do not support insert, delete,
 or update semantics. By maintaining immutable blocks of data within
 the system, we can maintain a consistent snapshot of historical
-segments and provide read consistency without having to worry about
+data and provide read consistency without having to worry about
 concurrent updates and deletes. If updates to a historical segment are
-required, a new segment is built for the same data source and time
-interval with the updated data and the version identifier is
-increased. Multiple segments for the same data source and time range
+required, we build a new segment for the same data source and time
+interval with the updated data. This new segment will have an increased version identifier. Multiple segments for the same data source and time range
 may exist in the system at any time. To provide read consistency,
 Druid read operations always access data in a particular time range
 from the segment with the most recent version identifier for that time
@@ -264,17 +262,17 @@ loading and responding to queries for historical events.
 Data in Druid is stored on the compute and real-time nodes (storage
 nodes). Queries to access this data will typically first hit a layer
 of broker nodes. Broker nodes are responsible for finding and routing
-queries down to the storage nodes that host the pertinent data. These
+queries down to the storage nodes that host the pertinent data. The
 storage nodes compute their portion of the query response in parallel
 and return their results to the brokers.
 
 Druid also has a set of coordination nodes to manage load assignment,
 distribution, and replication. Coordination nodes are not queryable
-and instead focus on maintaining cluster stability.
+and instead focus on maintaining cluster stability. Coordination nodes
+have an external dependency on a MySQL database. 
 
-There is minimal communication between Druid nodes and instead all
-nodes connect to an Apache Zookeeper \cite{hunt2010zookeeper} cluster for
-coordination. The following sections will discuss each Druid component
+Druid relies on an Apache Zookeeper \cite{hunt2010zookeeper} cluster for
+coordination. This dependency is required because there is no direct coordination-related communication between Druid nodes. The following sections will discuss each Druid component
 in greater detail.
 
 \subsection{Apache Zookeeper}
@@ -282,7 +280,7 @@ Zookeeper is a service for coordinating processes of distributed
 applications. Zookeeper provides connecting applications an
 abstraction of a hierarchy of data nodes known as znodes. Each znode
 is part of a hierarchical namespace, similar to file
-systems. Zookeeper that has the concept of ephemeral and permanent
+systems. Zookeeper has the concept of ephemeral and permanent
 znodes. Permanent nodes must be created and destroyed explicitly by a
 connecting application. Ephemeral znodes can be created by connecting
 applications and deleted either explicitly or if the session that
@@ -350,21 +348,23 @@ in Figure~\ref{fig:data-ingestion}.
 The purpose of the message bus in Figure~\ref{fig:data-ingestion} is to act as a buffer for
 incoming events. The message bus can maintain offsets indicating the
 position in an event stream that a real-time node has read up to and
-real-time nodes can update these offsets periodically. Real-time nodes
-ingest data by reading events from the message bus.
+real-time nodes can update these offsets periodically. The message bus also acts as a backup storage for recent events.
+Real-time nodes ingest data by reading events from the message bus. The time from event creation to message bus storage to
+event consumption is on the order of hundreds of milliseconds.
 
 Real-time nodes maintain an in-memory index for all incoming
-events. To minimize data loss impacts, the nodes will persist their
-indexes to disk either periodically or after some maximum row limit is
+events. These indexes are incrementally populated as new events appear on the message bus. The indexes are also directly queryable.
+Real-time nodes persist their indexes to disk either periodically or after some maximum row limit is
 reached. After each persist, a real-time node updates the message bus
 with the offset of the last event of the most recently persisted
-index. If a real-time node fails and recovers, it can simply reload
+index. Each persisted index is immutable. If a real-time node fails and recovers, it can simply reload
 any indexes that were persisted to disk and continue reading the
-message bus from the point the last offset was committed.
+message bus from the point the last offset was committed. Periodically committing offsets reduces the number of messages a real-time
+node has to rescan after a failure scenario.
 
 Real-time nodes maintain a consolidated view of the currently updating
 index and of all indexes persisted to disk. This unified view allows
-all indexes to be queried. On a periodic basis, the nodes will
+all indexes on a node to be queried. On a periodic basis, the nodes will
 schedule a background task that searches for all persisted indexes of
 a data source. The task merges these indexes together and builds a
 historical segment. The nodes will upload the segment to deep storage
@@ -400,17 +400,18 @@ serve. Once the segment is queryable on the historical nodes, the
 real-time node flushes all information about the segment and
 unannounces it is serving the segment.
 
-Real-time nodes are highly scalable. Multiple nodes can read the same
-event stream, creating natural segment partitions across nodes. The
-largest real-time Druid cluster we know of is consuming approximately
+Real-time nodes are highly scalable. If the data volume and ingestion rates
+for a given data source exceed the maximum capabilities of a single node, additional nodes can be added.
+Multiple nodes can consume events from the same stream, and every individual node only holds a portion of the total number of events.
+This creates natural partitions across nodes. Each node announces the real-time segment it is serving and each real-time segment has a partition number.
+To our knowledge, the largest production level real-time Druid cluster is consuming approximately
 2 TB of raw data per hour.
 
 \subsection{Broker Nodes}
 Broker nodes act as query routers to other queryable nodes such as
 compute and real-time nodes. Broker nodes understand the metadata
 published in Zookeeper about what segments exist and on what nodes the
-segments are stored. A single query will always hit a single broker
-node. Broker nodes route incoming queries such that the queries hit
+segments are stored. Broker nodes route incoming queries such that the queries hit
 the right storage nodes. Broker nodes also merge partial results from
 storage nodes before returning a final consolidated result to the
 caller.  Additionally, brokers provide an extra level of data
@@ -425,12 +426,13 @@ first build a view of the world from information in Zookeeper. Recall
 that Druid uses Zookeeper to maintain information about all compute
 and real-time nodes in a cluster and the segments those nodes are
 serving. For every data source in Zookeeper, the Broker node builds a
-timeline of segments and the nodes that serve them. A timeline
+timeline of segments for the data source and the nodes that serve them. A timeline
 consists of segments and represents which segments contain data for
 what ranges of time. Druid may have multiple segments where the data
 source and interval are the same but versions differ. The timeline
-view will always surface segments that contain the most recent version
-of data for a time range. When queries are received for a specific
+view will always surface segments with the most recent version
+identifier for a time range. If two segments intervals overlap, the segment with the more recent
+version always has precedence. When queries are received for a specific
 data source and interval, the Broker node performs a lookup on the
 timeline associated with the query data source for the query interval
 and retrieves the segments that contain data for the query. The broker
@@ -444,7 +446,7 @@ Broker nodes employ a distributed cache with a LRU \cite{o1993lru,
 kim2001lrfu} cache invalidation strategy. The broker cache stores
 per segment results. The cache can be local to each broker node or
 shared across multiple nodes using an external distributed cache
-such as memcached. Recall that each time a broker node receives a
+such as memcached \cite{fitzpatrick2004distributed}. Recall that each time a broker node receives a
 query, it first maps the query to a set of segments. A subset of
 these segment results may already exist in the cache and the results
 can be directly pulled from the cache. For any segment results that
@@ -521,21 +523,34 @@ parameters. A typical query will contain the data source name, the
 granularity of the result data, the time range of interest, and the
 type of request.  A sample time series query is shown below:
 \begin{verbatim}
-{ "queryType"    : "timeseries",
-  "dataSource"   : "sample_data",
-  "intervals"    : "2013-01-01/2013-01-02",
-  "filter"       : {},
-  "granularity"  : "day",
-  "aggregations" : [ {
-    "type"      : "count",
-    "fieldName" : "row",
-    "name"      : "row" } ] }
+{ 
+  "queryType"     : "timeseries",
+  "dataSource"    : "sample_data",
+  "intervals"     : "2013-01-01/2013-01-02",
+  "filter"        : {
+    "type"        : "selector",
+    "dimension"   : "poets",
+    "value"       : "Ke$ha" 
+  },
+  "granularity"   : "day",
+  "aggregations"  : [ 
+    {
+      "type"      : "count",
+      "fieldName" : "row",
+      "name"      : "row" 
+    } 
+  ] 
+}
 \end{verbatim}
 
 Certain query types will also support a filter set. A filter set is an
 arbitrary Boolean expression of dimension name and value
-pairs. Support for arbitrary filter sets enables flexibility and
-provides the functionality to deeply explore data.
+pairs. Support for complex nested filter sets enables flexibility and
+provides the ability to deeply explore data.
+
+The exact query syntax depends on the query type and the information requested.
+It is beyond the scope of this paper to describe the Query API in full detail.
+We are in the process of building out SQL support for Druid.
 
 \section{Storage}
 \label{sec:storage}
@@ -677,7 +692,7 @@ of a real-time segment. If a real-time node fails and recovers, it can
 reload any indexes that were persisted to disk and read from the
 message bus from the point it last committed an offset.
 
-\subsection{Local Caching}
+\subsection{Local Segment Cache}
 Recall that each Druid compute node maintains a local cache of
 historical segments it recently served. A compute node also has a
 lookup table for segments it has in its cache and stores this lookup
@@ -742,19 +757,19 @@ nodes, each with 16 cores, 60GB of RAM, 10 GigE Ethernet, and 1TB of
 disk space. Collectively, the cluster comprised of 1600 cores, 6TB or
 RAM, fast Ethernet and more than enough disk space.
 
-On simple aggregation queries, the benchmarks of the 100 node cluster
-are shown in Tables~\ref{tab:sql_queries}-\ref{tab:?}. SQL statements are included to describe the
-purpose of the query. Please note:
+The benchmarks of the 100 node cluster
+are shown in Figures~\ref{tab:cluster_scan_rate} and ~\ref{tab:core_scan_rate}.
+Figure~\ref{fig:cluster_scan_rate} shows the cluster scan rate and Figure~\ref{fig:core_scan_rate} shows the core scan rate.
+
+SQL statements are included in Table~\ref{tab:sql_queries} to describe the
+purpose of each of the queries. Please note:
 \begin{itemize}
-\item The timestamp range encompasses all data.
-\item 15-core is a 16-core machine with 60GB RAM and 1TB of local
-  disk.  The machine was configured to only use 15 threads for
+\item The timestamp range of the queries encompassed all data.
+\item Each machine was a 16-core machine with 60GB RAM and 1TB of local
+  disk. The machine was configured to only use 15 threads for
   processing queries.
-\item 4-core is a 4-core machine with 32GB RAM and 1TB of local disk.
-\item ``in-memory'' means that the machine was configured to load all
-  data up into the Java heap and have it available for querying
-\item ``mmap'' means that the machine was configured to mmap the data
-  instead of load it into the Java heap
+\item A memory-mapped storage engine was used (the machine was configured to memory map the data
+  instead of loading it into the Java heap)
 \end{itemize}
 
 \begin{figure}
@@ -771,43 +786,47 @@ purpose of the query. Please note:
 \label{fig:core_scan_rate}
 \end{figure}
 
-% \begin{table*}
-%   \centering
-%   \caption{Druid Queries}
-%   \label{tab:sql_queries}
-%   \begin{verbatim}
-% 1 SELECT count(*) FROM _table_ WHERE timestamp >= ? AND timestamp < ?
+\begin{table*}
+  \centering
+  \caption{Druid Queries}
+  \label{tab:sql_queries}
+\begin{verbatim}
+1 SELECT count(*) FROM _table_ WHERE timestamp >= ? AND timestamp < ?
 
-% 2 SELECT count(*), sum(metric1) FROM _table_ WHERE timestamp >= ? AND timestamp < ?
+2 SELECT count(*), sum(metric1) FROM _table_ WHERE timestamp >= ? AND timestamp < ?
 
-% 3 SELECT count(*), sum(metric1), sum(metric2), sum(metric3), sum(metric4) FROM _table_
-%   WHERE timestamp >= ? AND timestamp < ?
+3 SELECT count(*), sum(metric1), sum(metric2), sum(metric3), sum(metric4) FROM _table_
+  WHERE timestamp >= ? AND timestamp < ?
 
-% 4 SELECT high_card_dimension, count(*) AS cnt FROM _table_
-%   WHERE timestamp >= ? AND timestamp < ?
-%   GROUP BY high_card_dimension ORDER BY cnt limit 100
+4 SELECT high_card_dimension, count(*) AS cnt FROM _table_
+  WHERE timestamp >= ? AND timestamp < ?
+  GROUP BY high_card_dimension ORDER BY cnt limit 100
 
-% 5 SELECT high_card_dimension, count(*) AS cnt, sum(metric1) FROM _table_
-%   WHERE timestamp >= ? AND timestamp < ?
-%   GROUP BY high_card_dimension ORDER BY cnt limit 100
+5 SELECT high_card_dimension, count(*) AS cnt, sum(metric1) FROM _table_
+  WHERE timestamp >= ? AND timestamp < ?
+  GROUP BY high_card_dimension ORDER BY cnt limit 100
 
-% 6 SELECT high_card_dimension, count(*) AS cnt, sum(metric1), sum(metric2), sum(metric3), sum(metric4)
-%   FROM _table_ WHERE timestamp >= ? AND timestamp < ?
-%   GROUP BY high_card_dimension ORDER BY cnt limit 100
-% \end{verbatim}
-% \end{table*}
+6 SELECT high_card_dimension, count(*) AS cnt, sum(metric1), sum(metric2), sum(metric3), sum(metric4)
+  FROM _table_ WHERE timestamp >= ? AND timestamp < ?
+  GROUP BY high_card_dimension ORDER BY cnt limit 100
+\end{verbatim}
+\end{table*}
 
-% \begin{enumerate}
-% \item \texttt{Select high\_card\_dimension, count(*), sum(metric1), sum(metric2), sum(metric3), sum(metric4) AS cnt from \_table\_ where timestamp $\geq$ ? and timestamp $<$ ? group by high\_card\_dimension order by cnt limit 100;}
-% \end{enumerate}
+%\begin{enumerate}
+%\item \texttt{Select high\_card\_dimension, count(*), sum(metric1), sum(metric2), sum(metric3), sum(metric4) AS cnt from \_table\_ where timestamp $\geq$ ? and timestamp $<$ ? group by high\_card\_dimension order by cnt limit 100;}
+%\end{enumerate}
+
+The solid line in Figure~\ref{tab:core_scan_rate} indicates linear speed-up. We can see that Druid
+follows a sub-linear speed up model. The speed up of a parallel computing system is often limited
+by the time needed for the sequential operations of the system, in accordance with Amdahl's law \cite{amdahl1967validity}. 
 
 The first query listed in Table~\ref{tab:sql_queries} is just a count and we see the best
 performance of our system with it, achieving scan rates of 33M
-rows/second/core.  At first glance it looks like fewer nodes might
+rows/second/core. At first glance it looks like fewer nodes might
 actually be outperforming more nodes in the rows/sec/core metric, but
 that's just because 100 nodes is over provisioned for the data set.
 Druid's concurrency model is based on shards, one thread will scan one
-shard.  If a node has 15 cores, for example, and handles a query that
+shard. If a node has 15 cores, for example, and handles a query that
 requires scanning 16 shards, if we assume each shard takes 1 second to
 process the total time to finish the query will be 2 seconds (1 second
 for the first 15 shards and 1 second for the 16th shard), decreasing
@@ -819,15 +838,9 @@ because of the column-oriented storage format Druid employs.  For the
 \texttt{count(*)} queries, it only has to check the timestamp column to satisfy
 the where clause.  As we add metrics, it has to also load those metric
 values and scan over them, increasing the amount of memory scanned.
-Table~\ref{tab:?}-\ref{tab:?} shows the results for top 100 queries on our high
-cardinality dimension.
 
-In Tables~\ref{tab:?}-\ref{tab:?}, we see the superior performance of the in-memory
-representation when doing top lists versus when doing simple
-time-based aggregations.  This is an implementation detail, but it's
-largely because of the differences in accessing simple in-memory
-pointers, versus scanning and seeking through a flattened data
-structure (even though it is already largely paged into memory).
+Queries 4-6 are for top 100 queries on our high cardinality dimension and we see decreased performance with them.
+Generally, top K queries are much slower than simple aggregation queries given the increased complexity in calcuating results.
 
 \section{Related Work}
 \label{sec:related}
