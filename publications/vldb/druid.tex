@@ -260,12 +260,12 @@ ingesting, storing, and responding to queries for the most recent
 events. Similarly, historical compute nodes are responsible for
 loading and responding to queries for historical events.
 
-Data in Druid is stored on the compute and real-time nodes (storage
-nodes). Queries to access this data will typically first hit a layer
+Data in Druid is stored on storage nodes. Storage nodes can be either compute or real-time nodes. 
+Queries to access this data will typically first hit a layer
 of broker nodes. Broker nodes are responsible for finding and routing
 queries down to the storage nodes that host the pertinent data. The
 storage nodes compute their portion of the query response in parallel
-and return their results to the brokers.
+and return their results to the brokers. Broker nodes, compute nodes, and realtime nodes can all be classified as queryable nodes.
 
 Druid also has a set of coordination nodes to manage load assignment,
 distribution, and replication. Coordination nodes are not queryable
@@ -405,6 +405,7 @@ Real-time nodes are highly scalable. If the data volume and ingestion rates
 for a given data source exceed the maximum capabilities of a single node, additional nodes can be added.
 Multiple nodes can consume events from the same stream, and every individual node only holds a portion of the total number of events.
 This creates natural partitions across nodes. Each node announces the real-time segment it is serving and each real-time segment has a partition number.
+Data from individual nodes will be merged at the Broker level.
 To our knowledge, the largest production level real-time Druid cluster is consuming approximately
 2 TB of raw data per hour.
 
@@ -481,7 +482,7 @@ segments. The MySQL database also contains a rule table that governs
 how segments are created, destroyed, and replicated in the cluster.
 
 The master does not directly communicate with a compute node when
-assigning it work; instead the master creates an ephemeral node in
+assigning it work; instead the master creates an ephemeral znode in
 Zookeeper containing information about what the compute node should
 do. The compute node maintains a similar connection to Zookeeper to
 monitor for new work.
@@ -551,7 +552,7 @@ provides the ability to deeply explore data.
 
 The exact query syntax depends on the query type and the information requested.
 It is beyond the scope of this paper to describe the Query API in full detail.
-We are in the process of building out SQL support for Druid.
+We are also in the process of building out SQL support for Druid.
 
 \section{Storage}
 \label{sec:storage}
@@ -589,7 +590,9 @@ publishers as follows:
 The resulting integer array lends itself very well to
 compression. Generic compression algorithms on top of encodings are
 very common in column-stores. We opted to use the LZF \cite{liblzf2013} compression
-algorithm. We can leverage similar compression algorithms for numeric
+algorithm.
+
+We can leverage similar compression algorithms for numeric
 columns. For example, the clicks and revenue columns in
 Table~\ref{tab:sample_data} can also be expressed as individual
 arrays.
@@ -840,9 +843,6 @@ because of the column-oriented storage format Druid employs.  For the
 the where clause.  As we add metrics, it has to also load those metric
 values and scan over them, increasing the amount of memory scanned.
 
-Queries 4-6 are for top 100 queries on our high cardinality dimension and we see decreased performance with them.
-Generally, top K queries are much slower than simple aggregation queries given the increased complexity in calcuating results.
-
 \section{Related Work}
 \label{sec:related}
 Cattell \cite{cattell2011scalable} maintains a great summary about existing Scalable SQL and
@@ -862,7 +862,7 @@ back-office/reporting usage. Typically, analysts will query these data
 stores and build reports from the results. In-memory databases such as
 SAP’s HANA \cite{farber2012sap} and VoltDB \cite{voltdb2010voltdb} are examples of other data stores that
 are highly suited for traditional data warehousing needs. Druid is a
-front-office system designed such that user-facing dashboards that be
+front-office system designed such that user-facing dashboards can be
 built on top of it. Similar to \cite{paraccel2013}, Druid has analytical features
 built in. The main features Druid offers over traditional data
 warehousing solutions are real-time data ingestion, interactive
@@ -886,7 +886,7 @@ In this paper, we presented Druid, a distributed, column-oriented,
 real-time analytical data store. Druid is a highly customizable
 solution that is optimized for fast query latencies. Druid ingests
 data in real-time and is fault-tolerant. We discussed the performance
-of Druid on billion row data sets. We discussed key Druid architecture
+of Druid on billion row data sets. We summarized key Druid architecture
 aspects such as the storage format, query language and general
 execution. In the future, we plan to cover more in depth the different
 algorithms we’ve developed for Druid and how other systems may plug
