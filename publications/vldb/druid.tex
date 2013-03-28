@@ -278,7 +278,7 @@ ingesting, storing, and responding to queries for the most recent
 events. Similarly, historical compute nodes are responsible for
 loading and responding to queries for historical events.
 
-Data in Druid is stored on storage nodes. Storage nodes can be either compute or real-time nodes. 
+Data in Druid is stored on storage nodes. Storage nodes can be either compute or real-time nodes.
 Queries to access this data will typically first hit a layer
 of broker nodes. Broker nodes are responsible for finding and routing
 queries down to the storage nodes that host the pertinent data. The
@@ -768,20 +768,15 @@ copies of a segment, which would lead to data loss.
 To benchmark Druid performance, we created a large test cluster with
 6TB of uncompressed data, representing tens of billions of fact
 rows. The data set contained more than a dozen dimensions, with
-cardinalities ranging from double digits to tens of millions. We computed
+cardinalities ranging from the double digits to tens of millions. We computed
 four metrics for each row (counts, sums, and averages). The data was
-sharded into chunks and each chunk was further sharded by dimension
-with cardinality >> 1 million, creating thousands of shards roughly 8
-million fact rows apiece.
+sharded first on timestamp then on dimension values, creating
+thousands of shards roughly 8 million fact rows apiece.
 
 The cluster used in the benchmark consisted of 100 historical compute
 nodes, each with 16 cores, 60GB of RAM, 10 GigE Ethernet, and 1TB of
 disk space. Collectively, the cluster comprised of 1600 cores, 6TB or
 RAM, fast Ethernet and more than enough disk space.
-
-The benchmarks of the 100 node cluster
-are shown in Figures~\ref{fig:cluster_scan_rate} and ~\ref{fig:core_scan_rate}.
-Figure~\ref{fig:cluster_scan_rate} shows the cluster scan rate and Figure~\ref{fig:core_scan_rate} shows the core scan rate.
 
 SQL statements are included in Table~\ref{tab:sql_queries} to describe the
 purpose of each of the queries. Please note:
@@ -791,13 +786,14 @@ purpose of each of the queries. Please note:
   disk. The machine was configured to only use 15 threads for
   processing queries.
 \item A memory-mapped storage engine was used (the machine was configured to memory map the data
-  instead of loading it into the Java heap)
+  instead of loading it into the Java heap.)
 \end{itemize}
 
 \begin{figure}
 \centering
 \includegraphics[width = 3in]{cluster_scan_rate}
-\caption{Druid cluster scan rate.}
+\caption{Druid cluster scan rate with lines indicating linear scaling
+  from 25 nodes.}
 \label{fig:cluster_scan_rate}
 \end{figure}
 
@@ -838,28 +834,37 @@ purpose of each of the queries. Please note:
 %\item \texttt{Select high\_card\_dimension, count(*), sum(metric1), sum(metric2), sum(metric3), sum(metric4) AS cnt from \_table\_ where timestamp $\geq$ ? and timestamp $<$ ? group by high\_card\_dimension order by cnt limit 100;}
 %\end{enumerate}
 
-The solid line in Figure~\ref{fig:core_scan_rate} indicates linear speed-up. We can see that Druid
-follows a sub-linear speed up model. The speed up of a parallel computing system is often limited
-by the time needed for the sequential operations of the system, in accordance with Amdahl's law \cite{amdahl1967validity}.
+Figure~\ref{fig:cluster_scan_rate} shows the cluster scan rate and
+Figure~\ref{fig:core_scan_rate} shows the core scan rate.  In
+Figure~\ref{fig:cluster_scan_rate} we also include projected linear
+scaling based on the results of the 25 core cluster.  In particular,
+we observe diminishing marginal returns to performance in the size of
+the cluster.  Under linear scaling, SQL query 1 would have achieved a
+speed of 37 billion rows per second on our 75 node cluster.  In fact,
+the speed was 26 billion rows per second.  The speed up of a parallel
+computing system is often limited by the time needed for the
+sequential operations of the system, in accordance with Amdahl's law
+\cite{amdahl1967validity}.
 
-The first query listed in Table~\ref{tab:sql_queries} is just a count and we see the best
-performance of our system with it, achieving scan rates of 33M
-rows/second/core. At first glance it looks like fewer nodes might
-actually be outperforming more nodes in the rows/sec/core metric, but
-that's just because 100 nodes is over provisioned for the data set.
-Druid's concurrency model is based on shards, one thread will scan one
-shard. If a node has 15 cores, for example, and handles a query that
-requires scanning 16 shards, if we assume each shard takes 1 second to
-process the total time to finish the query will be 2 seconds (1 second
-for the first 15 shards and 1 second for the 16th shard), decreasing
-the global scan rate because there are actually a number of cores that
-are idle.
+The first query listed in Table~\ref{tab:sql_queries} is a simple
+count, achieving scan rates of 33M rows/second/core. We believe
+the 75 node cluster was actually overprovisioned for the test
+dataset, explaining the modest improvement over the 50 node cluster.
+Druid's concurrency model is based on shards: one thread will scan one
+shard. If the number of segments on a compute node modulo the number
+of cores is small (e.g. 17 segments and 15 cores), then many of the
+cores will be idle during the last round of the computation.
 
 When we include more aggregations we see performance degrade.  This is
 because of the column-oriented storage format Druid employs.  For the
-\texttt{count(*)} queries, it only has to check the timestamp column to satisfy
-the where clause.  As we add metrics, it has to also load those metric
+\texttt{count(*)} queries, Druid only has to check the timestamp column to satisfy
+the ``where'' clause.  As we add metrics, it has to also load those metric
 values and scan over them, increasing the amount of memory scanned.
+
+Queries 4-6 are for top 100 queries on our high-cardinality dimension
+and we see decreased performance with them.  Generally, top K queries
+are much slower than simple aggregation queries given the increased
+complexity in calcuating results.
 
 \section{Related Work}
 \label{sec:related}
