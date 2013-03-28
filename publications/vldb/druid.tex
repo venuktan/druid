@@ -202,7 +202,7 @@ Partitioning the data based on granularity buckets allows users to
 fine tune the degree of parallelization they want in Druid. A data set
 representing a year’s worth of data may be bucketed by day, and a data
 set representing only a day’s worth of day may be partitioned by
-hour. Sharding on a single dimension (time) may still result in segments that are too large to manage if the data volume is sufficiently high. 
+hour. Sharding on a single dimension (time) may still result in segments that are too large to manage if the data volume is sufficiently high.
 To create more operable partition chunks, Druid may
 additionally shard data based on other factors such as dimension
 cardinality. Each shard creates a segment and hence, segments are uniquely identified by a data source
@@ -246,12 +246,12 @@ A Druid cluster consists of different types of nodes, each performing
 a specific function. The composition of a Druid cluster is shown in
 Figure~\ref{fig:druid_cluster}.
 
-\begin{figure}
+\begin{figure*}
 \centering
-\includegraphics[width = 3in]{druid_cluster}
+\includegraphics[width = 6in]{druid_cluster}
 \caption{An overview of a Druid cluster.}
 \label{fig:druid_cluster}
-\end{figure}
+\end{figure*}
 
 Recall that data in Druid is classified as either real-time or
 historical. The Druid cluster is architected to reflect this
@@ -270,7 +270,7 @@ and return their results to the brokers.
 Druid also has a set of coordination nodes to manage load assignment,
 distribution, and replication. Coordination nodes are not queryable
 and instead focus on maintaining cluster stability. Coordination nodes
-have an external dependency on a MySQL database. 
+have an external dependency on a MySQL database.
 
 Druid relies on an Apache Zookeeper \cite{hunt2010zookeeper} cluster for
 coordination. This dependency is required because there is no direct coordination-related communication between Druid nodes. The following sections will discuss each Druid component
@@ -524,23 +524,23 @@ parameters. A typical query will contain the data source name, the
 granularity of the result data, the time range of interest, and the
 type of request.  A sample time series query is shown below:
 \begin{verbatim}
-{ 
+{
   "queryType"     : "timeseries",
   "dataSource"    : "sample_data",
   "intervals"     : "2013-01-01/2013-01-02",
   "filter"        : {
     "type"        : "selector",
     "dimension"   : "poets",
-    "value"       : "Ke$ha" 
+    "value"       : "Ke$ha"
   },
   "granularity"   : "day",
-  "aggregations"  : [ 
+  "aggregations"  : [
     {
       "type"      : "count",
       "fieldName" : "row",
-      "name"      : "row" 
-    } 
-  ] 
+      "name"      : "row"
+    }
+  ]
 }
 \end{verbatim}
 
@@ -747,7 +747,7 @@ copies of a segment, which would lead to data loss.
 To benchmark Druid performance, we created a large test cluster with
 6TB of uncompressed data, representing tens of billions of fact
 rows. The data set contained more than a dozen dimensions, with
-cardinalities ranging double digits to tens of millions. We computed
+cardinalities ranging from double digits to tens of millions. We computed
 four metrics for each row (counts, sums, and averages). The data was
 sharded into chunks and each chunk was further sharded by dimension
 with cardinality >> 1 million, creating thousands of shards roughly 8
@@ -775,14 +775,14 @@ purpose of each of the queries. Please note:
 
 \begin{figure}
 \centering
-\includegraphics[width = 2.5in]{cluster_scan_rate}
+\includegraphics[width = 3in]{cluster_scan_rate}
 \caption{Druid cluster scan rate.}
 \label{fig:cluster_scan_rate}
 \end{figure}
 
 \begin{figure}
 \centering
-\includegraphics[width = 2.5in]{core_scan_rate}
+\includegraphics[width = 3in]{core_scan_rate}
 \caption{Druid core scan rate.}
 \label{fig:core_scan_rate}
 \end{figure}
@@ -819,7 +819,7 @@ purpose of each of the queries. Please note:
 
 The solid line in Figure~\ref{tab:core_scan_rate} indicates linear speed-up. We can see that Druid
 follows a sub-linear speed up model. The speed up of a parallel computing system is often limited
-by the time needed for the sequential operations of the system, in accordance with Amdahl's law \cite{amdahl1967validity}. 
+by the time needed for the sequential operations of the system, in accordance with Amdahl's law \cite{amdahl1967validity}.
 
 The first query listed in Table~\ref{tab:sql_queries} is just a count and we see the best
 performance of our system with it, achieving scan rates of 33M
