@@ -218,7 +218,7 @@ ggplot(data = dat2, aes(
 #  scale_y_log10() +
   xlab("Number of Nodes") +
   ylab("Cluster Scan Rate (billion rows/sec.)")
-ggsave("../figures/cluster_scan_rate.pdf", width = 8, height = 6)
+ggsave("../figures/cluster_scan_rate.pdf", width = 4, height = 3)
 
 
 
@@ -246,6 +246,6 @@ ggplot(data = dat2, aes(
   geom_point(size = 3) +
   xlab("Number of Nodes") +
   ylab("Core Scan Rate (million rows/sec.)")
-ggsave("../figures/core_scan_rate.pdf", width = 8, height = 6)
+ggsave("../figures/core_scan_rate.pdf", width = 4, height = 3)
 
 
