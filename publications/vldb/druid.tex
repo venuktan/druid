@@ -66,19 +66,37 @@
 % e-mail address with \email.
 %
 % 1st. author
-\alignauthor Fangjin Yang
-\email{fangjin@metamarkets.com}
-\alignauthor Eric Tschetter
-\email{eric@metamarkets.com}
-\alignauthor Gian Merlino
-\email{gian@metamarkets.com}
+\alignauthor Fangjin Yang\\
+  \affaddr{Metamarkets, Inc.}\\
+  \affaddr{625 2nd Street}\\
+  \affaddr{San Francisco, CA, USA}\\
+  \email{fangjin@metamarkets.com}
+\alignauthor Eric Tschetter\\
+  \affaddr{Metamarkets, Inc.}\\
+  \affaddr{625 2nd Street}\\
+  \affaddr{San Francisco, CA, USA}\\
+  \email{eric@metamarkets.com}
+\alignauthor Gian Merlino\\
+  \affaddr{Metamarkets, Inc.}\\
+  \affaddr{625 2nd Street}\\
+  \affaddr{San Francisco, CA, USA}\\
+  \email{gian@metamarkets.com}
 \and
-\alignauthor Nelson Ray
-\email{nelson@metamarkets.com}
-\alignauthor Xavier Léauté
-\email{xavier@metamarkets.com}
-\alignauthor Deep Ganguli
-\email{deep@metamarkets.com}
+\alignauthor Nelson Ray\\
+  \affaddr{Metamarkets, Inc.}\\
+  \affaddr{625 2nd Street}\\
+  \affaddr{San Francisco, CA, USA}\\
+  \email{nelson@metamarkets.com}
+\alignauthor Xavier Léauté\\
+  \affaddr{Metamarkets, Inc.}\\
+  \affaddr{625 2nd Street}\\
+  \affaddr{San Francisco, CA, USA}\\
+  \email{xavier@metamarkets.com}
+\alignauthor Deep Ganguli\\
+  \affaddr{Metamarkets, Inc.}\\
+  \affaddr{625 2nd Street}\\
+  \affaddr{San Francisco, CA, USA}\\
+  \email{deep@metamarkets.com}
 }
 % There's nothing stopping you putting the seventh, eighth, etc.
 % author on the opening page (as the 'third row') but we ask,
@@ -762,7 +780,7 @@ disk space. Collectively, the cluster comprised of 1600 cores, 6TB or
 RAM, fast Ethernet and more than enough disk space.
 
 The benchmarks of the 100 node cluster
-are shown in Figures~\ref{tab:cluster_scan_rate} and ~\ref{tab:core_scan_rate}.
+are shown in Figures~\ref{fig:cluster_scan_rate} and ~\ref{fig:core_scan_rate}.
 Figure~\ref{fig:cluster_scan_rate} shows the cluster scan rate and Figure~\ref{fig:core_scan_rate} shows the core scan rate.
 
 SQL statements are included in Table~\ref{tab:sql_queries} to describe the
@@ -820,7 +838,7 @@ purpose of each of the queries. Please note:
 %\item \texttt{Select high\_card\_dimension, count(*), sum(metric1), sum(metric2), sum(metric3), sum(metric4) AS cnt from \_table\_ where timestamp $\geq$ ? and timestamp $<$ ? group by high\_card\_dimension order by cnt limit 100;}
 %\end{enumerate}
 
-The solid line in Figure~\ref{tab:core_scan_rate} indicates linear speed-up. We can see that Druid
+The solid line in Figure~\ref{fig:core_scan_rate} indicates linear speed-up. We can see that Druid
 follows a sub-linear speed up model. The speed up of a parallel computing system is often limited
 by the time needed for the sequential operations of the system, in accordance with Amdahl's law \cite{amdahl1967validity}.
 
