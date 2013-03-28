@@ -861,11 +861,6 @@ because of the column-oriented storage format Druid employs.  For the
 the ``where'' clause.  As we add metrics, it has to also load those metric
 values and scan over them, increasing the amount of memory scanned.
 
-Queries 4-6 are for top 100 queries on our high-cardinality dimension
-and we see decreased performance with them.  Generally, top K queries
-are much slower than simple aggregation queries given the increased
-complexity in calcuating results.
-
 \section{Related Work}
 \label{sec:related}
 Cattell \cite{cattell2011scalable} maintains a great summary about existing Scalable SQL and
