@@ -130,12 +130,12 @@ data imports or software updates. We have been building Druid over the
 course of the last two years and it is the core engine of the
 Metamarkets technology stack.
 
-In many ways, Druid shares similarities with distributed databases
+In many ways, Druid shares similarities with other interactive query systems
 \cite{melnik2010dremel}, main-memory databases \cite{farber2012sap}, and widely-known distributed data
 stores such as BigTable \cite{chang2008bigtable}, Dynamo \cite{decandia2007dynamo}, and Cassandra \cite{lakshman2010cassandra}. Unlike
 most traditional data stores, Druid operates mainly on read-only data
 and has limited functionality for writes. The system is highly optimized
-for large-scale transactional data aggregation and arbitrarily deep data exploration. Druid is very configurable
+for large-scale transactional data aggregation and arbitrarily deep data exploration. Druid is highly configurable
 and allows users to adjust levels of fault tolerance and
 performance.
 
@@ -202,9 +202,8 @@ Partitioning the data based on granularity buckets allows users to
 fine tune the degree of parallelization they want in Druid. A data set
 representing a year’s worth of data may be bucketed by day, and a data
 set representing only a day’s worth of day may be partitioned by
-hour. Depending on the data volume, sharding only on the time
-dimension may still result in segments that are too large to
-manage. To create more operable partition chunks, Druid may
+hour. Sharding on a single dimension (time) may still result in segments that are too large to manage if the data volume is sufficiently high. 
+To create more operable partition chunks, Druid may
 additionally shard data based on other factors such as dimension
 cardinality. Each shard creates a segment and hence, segments are uniquely identified by a data source
 id describing the data, the time interval of the data, a version
@@ -222,10 +221,12 @@ the system, we can maintain a consistent snapshot of historical
 data and provide read consistency without having to worry about
 concurrent updates and deletes. If updates to a historical segment are
 required, we build a new segment for the same data source and time
-interval with the updated data. This new segment will have an increased version identifier. Multiple segments for the same data source and time range
+interval with the updated data. This new segment will have an updated version identifier.
+
+Multiple segments for the same data source and time range
 may exist in the system at any time. To provide read consistency,
 Druid read operations always access data in a particular time range
-from the segment with the most recent version identifier for that time
+from the segment with the latest version identifier for that time
 range. Historical segments may be stored on local disk or in a
 key-value “deep” store such as S3 \cite{decandia2007dynamo} or HDFS \cite{shvachko2010hadoop}. All historical
 segments have associated metadata describing properties of the segment
