@@ -278,21 +278,25 @@ ingesting, storing, and responding to queries for the most recent
 events. Similarly, historical compute nodes are responsible for
 loading and responding to queries for historical events.
 
-Data in Druid is stored on storage nodes. Storage nodes can be either compute or real-time nodes.
-Queries to access this data will typically first hit a layer
-of broker nodes. Broker nodes are responsible for finding and routing
-queries down to the storage nodes that host the pertinent data. The
-storage nodes compute their portion of the query response in parallel
-and return their results to the brokers. Broker nodes, compute nodes, and realtime nodes can all be classified as queryable nodes.
+Data in Druid is stored on storage nodes. Storage nodes can be either
+compute or real-time nodes.  Queries to access this data will
+typically first hit a layer of broker nodes. Broker nodes are
+responsible for finding and routing queries down to the storage nodes
+that host the pertinent data. The storage nodes compute their portion
+of the query response in parallel and return their results to the
+brokers. Broker nodes, compute nodes, and realtime nodes can all be
+classified as queryable nodes.
 
 Druid also has a set of coordination nodes to manage load assignment,
 distribution, and replication. Coordination nodes are not queryable
 and instead focus on maintaining cluster stability. Coordination nodes
 have an external dependency on a MySQL database.
 
-Druid relies on an Apache Zookeeper \cite{hunt2010zookeeper} cluster for
-coordination. This dependency is required because there is no direct coordination-related communication between Druid nodes. The following sections will discuss each Druid component
-in greater detail.
+Druid relies on an Apache Zookeeper \cite{hunt2010zookeeper} cluster
+for coordination. This dependency is required because there is no
+direct coordination-related communication between Druid nodes. The
+following sections will discuss each Druid component in greater
+detail.
 
 \subsection{Apache Zookeeper}
 Zookeeper is a service for coordinating processes of distributed
@@ -419,13 +423,16 @@ serve. Once the segment is queryable on the historical nodes, the
 real-time node flushes all information about the segment and
 unannounces it is serving the segment.
 
-Real-time nodes are highly scalable. If the data volume and ingestion rates
-for a given data source exceed the maximum capabilities of a single node, additional nodes can be added.
-Multiple nodes can consume events from the same stream, and every individual node only holds a portion of the total number of events.
-This creates natural partitions across nodes. Each node announces the real-time segment it is serving and each real-time segment has a partition number.
-Data from individual nodes will be merged at the Broker level.
-To our knowledge, the largest production level real-time Druid cluster is consuming approximately
-2 TB of raw data per hour.
+Real-time nodes are highly scalable. If the data volume and ingestion
+rates for a given data source exceed the maximum capabilities of a
+single node, additional nodes can be added.  Multiple nodes can
+consume events from the same stream, and every individual node only
+holds a portion of the total number of events.  This creates natural
+partitions across nodes. Each node announces the real-time segment it
+is serving and each real-time segment has a partition number.  Data
+from individual nodes will be merged at the Broker level.  To our
+knowledge, the largest production level real-time Druid cluster is
+consuming approximately 2 TB of raw data per hour.
 
 \subsection{Broker Nodes}
 Broker nodes act as query routers to other queryable nodes such as
@@ -661,22 +668,20 @@ bytes using CONCISE compression versus using an integer array. The
 results were generated on a cc2.8xlarge system with a single thread,
 2G heap, 512m young gen, and a forced GC between each run. The data
 set is a single day’s worth of data collected from the Twitter garden
-hose \cite{twitter2013} data stream. The data set contains 2, 272, 295 rows and 12
+hose \cite{twitter2013} data stream. The data set contains 2,272,295 rows and 12
 dimensions of varying cardinality. As an additional comparison, we
 also resorted the data set rows to maximize compression.
 
-%Figure 4. CONCISE compression versus integer array
-In the unsorted case, the total CONCISE compressed size was 53, 451,
-144 bytes and the total integer array size was 127, 248, 520
-bytes. Overall, CONCISE compressed sets are about 42\% smaller
-than integer arrays.  In the sorted case, the total CONCISE compressed
-size was 43,832,884 bytes and the total integer array size was 127,
-248, 520 bytes. What is interesting to note is that after sorting,
-global compression only increased minimally. The total CONCISE set
-size to total integer array size is 34\%. It is also
-interesting to note that as the cardinality of a dimension approaches
-the total number of rows in a data set, integer arrays actually
-require less space than CONCISE sets.
+In the unsorted case, the total CONCISE compressed size was 53,451,144
+bytes and the total integer array size was 127,248,520 bytes. Overall,
+CONCISE compressed sets are about 42\% smaller than integer arrays.
+In the sorted case, the total CONCISE compressed size was 43,832,884
+bytes and the total integer array size was 127,248,520 bytes.  What is
+interesting to note is that after sorting, global compression only
+increased minimally. The total CONCISE set size to total integer array
+size is 34\%. It is also interesting to note that as the cardinality
+of a dimension approaches the total number of rows in a data set,
+integer arrays actually require less space than CONCISE sets.
 
 \subsection{Storage Engine}
 Druid’s persistence components allows for different storage engines to
