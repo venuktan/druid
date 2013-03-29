@@ -68,33 +68,33 @@
 %
 % 1st. author
 \alignauthor Fangjin Yang\\
-\affaddr{Metamarkets, Inc.}\\
+\affaddr{Metamarkets Group, Inc.}\\
 \affaddr{625 2nd Street, Suite 230}\\
 \affaddr{San Francisco, CA, USA}\\
 \email{fangjin@metamarkets.com}
 \alignauthor Eric Tschetter\\
-\affaddr{Metamarkets, Inc.}\\
+\affaddr{Metamarkets Group, Inc.}\\
 \affaddr{625 2nd Street, Suite 230}\\
 \affaddr{San Francisco, CA, USA}\\
 \email{eric@metamarkets.com}
 \alignauthor Gian Merlino\\
-\affaddr{Metamarkets, Inc.}\\
+\affaddr{Metamarkets Group, Inc.}\\
 \affaddr{625 2nd Street, Suite 230}\\
 \affaddr{San Francisco, CA, USA}\\
 \email{gian@metamarkets.com}
 \and
 \alignauthor Nelson Ray\\
-\affaddr{Metamarkets, Inc.}\\
+\affaddr{Metamarkets Group, Inc.}\\
 \affaddr{625 2nd Street, Suite 230}\\
 \affaddr{San Francisco, CA, USA}\\
 \email{nelson@metamarkets.com}
 \alignauthor Xavier Léauté\\
-\affaddr{Metamarkets, Inc.}\\
+\affaddr{Metamarkets Group, Inc.}\\
 \affaddr{625 2nd Street, Suite 230}\\
 \affaddr{San Francisco, CA, USA}\\
 \email{xavier@metamarkets.com}
 \alignauthor Deep Ganguli\\
-\affaddr{Metamarkets, Inc.}\\
+\affaddr{Metamarkets Group, Inc.}\\
 \affaddr{625 2nd Street, Suite 230}\\
 \affaddr{San Francisco, CA, USA}\\
 \email{deep@metamarkets.com}
@@ -186,7 +186,6 @@ a Druid segment, consider the data set shown in Table~\ref{tab:sample_data}.
   \centering
   \caption{Sample Druid data}
   \label{tab:sample_data}
-  \texttt{
   \begin{tabular}{| l | l | l | l | l | l | l | l |}
     \hline
     \textbf{Timestamp} & \textbf{Publisher} & \textbf{Advertiser} & \textbf{Gender} & \textbf{Country} & \textbf{Impressions} & \textbf{Clicks} & \textbf{Revenue} \\ \hline
@@ -195,7 +194,6 @@ a Druid segment, consider the data set shown in Table~\ref{tab:sample_data}.
     2011-01-01T02:00:00Z & ultratrimfast.com & google.com & Male & USA & 1953 & 17 & 17.31 \\ \hline
     2011-01-01T02:00:00Z & ultratrimfast.com & google.com & Male & USA & 3194 & 170 & 34.01 \\ \hline
   \end{tabular}
-}
 \end{table*}
 
 A segment is composed of multiple binary files, each representing a
@@ -331,13 +329,6 @@ znodes under a special “load queue” path associated with the compute
 node. Figure~\ref{fig:zookeeper} illustrates some of the Zookeeper paths that exist
 for different compute nodes.
 
-\begin{figure}
-\centering
-\includegraphics[width = 3in]{zookeeper}
-\caption{Each compute node creates ephemeral znodes under specifically configured Zookeeper paths.}
-\label{fig:zookeeper}
-\end{figure}
-
 To expose a segment for querying, a compute node must first possess a
 local copy of the segment. Before a compute node downloads a segment
 from deep storage, it first checks a local disk directory (cache) to
@@ -349,6 +340,13 @@ storage and about how to decompress and process the segment. Once a
 compute node completes processing a segment, the node announces (in
 Zookeeper) that it is serving the segment. At this point, the segment
 is queryable.
+
+\begin{figure}
+\centering
+\includegraphics[width = 3in]{zookeeper}
+\caption{Each compute node creates ephemeral znodes under specifically configured Zookeeper paths.}
+\label{fig:zookeeper}
+\end{figure}
 
 \subsubsection{Tiers}
 \label{sec:tiers}
@@ -831,18 +829,16 @@ purpose of each of the queries. Please note:
   \centering
   \caption{Druid Queries}
   \label{tab:sql_queries}
-\texttt{
   \begin{tabular}{| l | p{15cm} |}
     \hline
     \textbf{Query \#} & \textbf{Query} \\ \hline
-    1 & SELECT count(*) FROM \_table\_ WHERE timestamp $\geq$ ? AND timestamp < ? \\ \hline
-    2 & SELECT count(*), sum(metric1) FROM \_table\_ WHERE timestamp $\geq$ ? AND timestamp < ? \\ \hline
-    3 & SELECT count(*), sum(metric1), sum(metric2), sum(metric3), sum(metric4) FROM \_table\_ WHERE timestamp $\geq$ ? AND timestamp < ? \\ \hline
-    4 & SELECT high\_card\_dimension, count(*) AS cnt FROM \_table\_ WHERE timestamp $\geq$ ? AND timestamp < ? GROUP BY high\_card\_dimension ORDER BY cnt limit 100 \\ \hline
-    5 & SELECT high\_card\_dimension, count(*) AS cnt, sum(metric1) FROM \_table\_ WHERE timestamp $\geq$ ? AND timestamp < ? GROUP BY high\_card\_dimension ORDER BY cnt limit 100 \\ \hline
-    6 & SELECT high\_card\_dimension, count(*) AS cnt, sum(metric1), sum(metric2), sum(metric3), sum(metric4) FROM \_table\_ WHERE timestamp $\geq$ ? AND timestamp < ? GROUP BY high\_card\_dimension ORDER BY cnt limit 100 \\ \hline
+    1 & \texttt{SELECT count(*) FROM \_table\_ WHERE timestamp $\geq$ ? AND timestamp < ?} \\ \hline
+    2 & \texttt{SELECT count(*), sum(metric1) FROM \_table\_ WHERE timestamp $\geq$ ? AND timestamp < ?} \\ \hline
+    3 & \texttt{SELECT count(*), sum(metric1), sum(metric2), sum(metric3), sum(metric4) FROM \_table\_ WHERE timestamp $\geq$ ? AND timestamp < ?} \\ \hline
+    4 & \texttt{SELECT high\_card\_dimension, count(*) AS cnt FROM \_table\_ WHERE timestamp $\geq$ ? AND timestamp < ? GROUP BY high\_card\_dimension ORDER BY cnt limit 100} \\ \hline
+    5 & \texttt{SELECT high\_card\_dimension, count(*) AS cnt, sum(metric1) FROM \_table\_ WHERE timestamp $\geq$ ? AND timestamp < ? GROUP BY high\_card\_dimension ORDER BY cnt limit 100} \\ \hline
+    6 & \texttt{SELECT high\_card\_dimension, count(*) AS cnt, sum(metric1), sum(metric2), sum(metric3), sum(metric4) FROM \_table\_ WHERE timestamp $\geq$ ? AND timestamp < ? GROUP BY high\_card\_dimension ORDER BY cnt limit 100} \\ \hline
   \end{tabular}
-}
 \end{table*}
 
 Figure~\ref{fig:cluster_scan_rate} shows the cluster scan rate and
