@@ -159,16 +159,12 @@ performance.
 
 Druid builds on the ideas of other distributed data stores, real-time
 computation engines, and search engine indexing algorithms. In this
-paper, we make the following contributions.
-\begin{itemize}
-\item We outline Druid’s real-time ingestion and query capabilities
+paper, we outline Druid's real-time ingestion and query capabilities
 and explain how we can explore events within milliseconds of their
-creation
-\item We describe how the architecture allows for fast and flexible
-queries and how inverted indices can be applied to quickly filter
-data
-\item We present experiments benchmarking Druid’s performance
-\end{itemize}
+creation.  We describe how the architecture allows for fast and flexible
+queries, how inverted indices can be applied to quickly filter
+data, and present experiments benchmarking Druid’s performance.
+
 The format of the paper is as follows: Section \ref{sec:data-model} describes the Druid
 data model. Section \ref{sec:cluster} presents an overview of the components of a
 Druid cluster. Section \ref{sec:query-api} outlines the query API. Section \ref{sec:storage} describes
@@ -186,25 +182,23 @@ understand how a typical row/column collection of data translates into
 a Druid segment, consider the data set shown in Table~\ref{tab:sample_data}.
 
 \begin{table*}
-\centering
-\caption{Sample Druid data}
-\label{tab:sample_data}
-\texttt{
-  \begin{tabular}{ l  l  l  l  l  l  l  l  l }
-  \hline
-  \textbf{Timestamp} & \textbf{Publisher} & \textbf{Advertiser} & \textbf{Gender} & \textbf{Country} & \textbf{Impressions} & \textbf{Clicks} & \textbf{Revenue} \\
-  2011-01-01T01:00:00Z & bieberfever.com & google.com & Male & USA & 1800 & 25 & 15.70 \\
-  2011-01-01T01:00:00Z & bieberfever.com & google.com & Male & USA & 2912 & 42 & 29.18 \\
-  2011-01-01T02:00:00Z & ultratrimfast.com & google.com & Male & USA & 1953 & 17 & 17.31 \\
-  2011-01-01T02:00:00Z & ultratrimfast.com & google.com & Male & USA & 3194 & 170 & 34.01 \\
+  \centering
+  \caption{Sample Druid data}
+  \label{tab:sample_data}
+  \begin{tabular}{| l | l | l | l | l | l | l | l |}
+    \hline
+    \textbf{Timestamp} & \textbf{Publisher} & \textbf{Advertiser} & \textbf{Gender} & \textbf{Country} & \textbf{Impressions} & \textbf{Clicks} & \textbf{Revenue} \\ \hline
+    2011-01-01T01:00:00Z & bieberfever.com & google.com & Male & USA & 1800 & 25 & 15.70 \\ \hline
+    2011-01-01T01:00:00Z & bieberfever.com & google.com & Male & USA & 2912 & 42 & 29.18 \\ \hline
+    2011-01-01T02:00:00Z & ultratrimfast.com & google.com & Male & USA & 1953 & 17 & 17.31 \\ \hline
+    2011-01-01T02:00:00Z & ultratrimfast.com & google.com & Male & USA & 3194 & 170 & 34.01 \\ \hline
   \end{tabular}
-}
 \end{table*}
 
 A segment is composed of multiple binary files, each representing a
 column of a data set as shown in Figure~\ref{fig:druid_segment}. The data set in Table~\ref{tab:sample_data} consists of 8 distinct
 columns, one of which is the timestamp column. Druid always requires a
-timestamp column as a method of simplifying data distribution, data retention policies and 
+timestamp column as a method of simplifying data distribution, data retention policies and
 first-level query pruning.  Segments always represent some time interval and each column
 contains the specific values for that column over the time
 interval. Since segments always contain data for a time range, it is
@@ -835,31 +829,17 @@ purpose of each of the queries. Please note:
   \centering
   \caption{Druid Queries}
   \label{tab:sql_queries}
-\begin{verbatim}
-1 SELECT count(*) FROM _table_ WHERE timestamp >= ? AND timestamp < ?
-
-2 SELECT count(*), sum(metric1) FROM _table_ WHERE timestamp >= ? AND timestamp < ?
-
-3 SELECT count(*), sum(metric1), sum(metric2), sum(metric3), sum(metric4) FROM _table_
-  WHERE timestamp >= ? AND timestamp < ?
-
-4 SELECT high_card_dimension, count(*) AS cnt FROM _table_
-  WHERE timestamp >= ? AND timestamp < ?
-  GROUP BY high_card_dimension ORDER BY cnt limit 100
-
-5 SELECT high_card_dimension, count(*) AS cnt, sum(metric1) FROM _table_
-  WHERE timestamp >= ? AND timestamp < ?
-  GROUP BY high_card_dimension ORDER BY cnt limit 100
-
-6 SELECT high_card_dimension, count(*) AS cnt, sum(metric1), sum(metric2), sum(metric3), sum(metric4)
-  FROM _table_ WHERE timestamp >= ? AND timestamp < ?
-  GROUP BY high_card_dimension ORDER BY cnt limit 100
-\end{verbatim}
+  \begin{tabular}{| l | p{15cm} |}
+    \hline
+    \textbf{Query \#} & \textbf{Query} \\ \hline
+    1 & SELECT count(*) FROM \_table\_ WHERE timestamp $\geq$ ? AND timestamp < ? \\ \hline
+    2 & SELECT count(*), sum(metric1) FROM \_table\_ WHERE timestamp $\geq$ ? AND timestamp < ? \\ \hline
+    3 & SELECT count(*), sum(metric1), sum(metric2), sum(metric3), sum(metric4) FROM \_table\_ WHERE timestamp $\geq$ ? AND timestamp < ? \\ \hline
+    4 & SELECT high\_card\_dimension, count(*) AS cnt FROM \_table\_ WHERE timestamp $\geq$ ? AND timestamp < ? GROUP BY high\_card\_dimension ORDER BY cnt limit 100 \\ \hline
+    5 & SELECT high\_card\_dimension, count(*) AS cnt, sum(metric1) FROM \_table\_ WHERE timestamp $\geq$ ? AND timestamp < ? GROUP BY high\_card\_dimension ORDER BY cnt limit 100 \\ \hline
+    6 & SELECT high\_card\_dimension, count(*) AS cnt, sum(metric1), sum(metric2), sum(metric3), sum(metric4) FROM \_table\_ WHERE timestamp $\geq$ ? AND timestamp < ? GROUP BY high\_card\_dimension ORDER BY cnt limit 100 \\ \hline
+  \end{tabular}
 \end{table*}
-
-%\begin{enumerate}
-%\item \texttt{Select high\_card\_dimension, count(*), sum(metric1), sum(metric2), sum(metric3), sum(metric4) AS cnt from \_table\_ where timestamp $\geq$ ? and timestamp $<$ ? group by high\_card\_dimension order by cnt limit 100;}
-%\end{enumerate}
 
 Figure~\ref{fig:cluster_scan_rate} shows the cluster scan rate and
 Figure~\ref{fig:core_scan_rate} shows the core scan rate.  In
@@ -868,7 +848,10 @@ scaling based on the results of the 25 core cluster.  In particular,
 we observe diminishing marginal returns to performance in the size of
 the cluster.  Under linear scaling, SQL query 1 would have achieved a
 speed of 37 billion rows per second on our 75 node cluster.  In fact,
-the speed was 26 billion rows per second.  The speed up of a parallel
+the speed was 26 billion rows per second.  However, queries 2-6 maintain
+a near-linear speedup up to 50 nodes: the core scan rates in
+Figure~\ref{fig:core_scan_rate} remain nearly constant.
+The increase in speed of a parallel
 computing system is often limited by the time needed for the
 sequential operations of the system, in accordance with Amdahl's law
 \cite{amdahl1967validity}.
@@ -939,21 +922,19 @@ into Druid to achieve powerful use cases.
 
 \section{Acknowledgements}
 \label{sec:acknowledgements}
-<<<<<<< HEAD
 Druid could not have been built without the help of many great
 engineers at Metamarkets and in the community. We want to thank Steve
 Harris, Jaypal Sethi, Danny Yuan, Jae Hyeon Bae, Paul Baclace, Dave
 Nielsen, Katherine Chu, and Dhruv Parthasarathy for their
-=======
+
 We want to thank Steve Harris and Jaypal Sethi for their feedback on improving this paper.
-We also want to give recognition to Adam Smith; without him the first Metamarkets hackathon would not have 
+We also want to give recognition to Adam Smith; without him the first Metamarkets hackathon would not have
 been organized and this paper would not have been created. Another special recognition to Katherine Chu for
-helping to create all the images in this paper. 
+helping to create all the images in this paper.
 
 Druid could not have been built without the help of many great
 engineers at Metamarkets and in the community. We want to thank Danny Yuan, Jae Hyeon Bae, Paul Baclace, Dave
 Nielsen, and Dhruv Parthasarathy for their
->>>>>>> master
 contributions to Druid.
 
 % The following two commands are all you need in the
