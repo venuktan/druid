@@ -202,7 +202,7 @@ a Druid segment, consider the data set shown in Table~\ref{tab:sample_data}.
 \end{table*}
 
 A segment is composed of multiple binary files, each representing a
-column of a data set. The data set in Table~\ref{tab:sample_data} consists of 8 distinct
+column of a data set as shown in Figure~\ref{fig:druid_segment}. The data set in Table~\ref{tab:sample_data} consists of 8 distinct
 columns, one of which is the timestamp column. Druid always requires a
 timestamp column as a method of simplifying data distribution, data retention policies and 
 first-level query pruning.  Segments always represent some time interval and each column
@@ -226,6 +226,13 @@ additionally shard data based on other factors such as dimension
 cardinality. Each shard creates a segment and hence, segments are uniquely identified by a data source
 id describing the data, the time interval of the data, a version
 indicating when the segment was created, and a shard partition number.
+
+\begin{figure}
+\centering
+\includegraphics[width = 2in]{druid_segment}
+\caption{Druid segment.}
+\label{fig:druid_segment}
+\end{figure}
 
 Data in Druid can be conceptually thought of as being either real-time
 or historical. Real-time data refers to recently ingested data;
@@ -266,7 +273,7 @@ Figure~\ref{fig:druid_cluster}.
 
 \begin{figure*}
 \centering
-\includegraphics[width = 6in]{druid_cluster}
+\includegraphics[width = 5.2in]{druid_cluster}
 \caption{An overview of a Druid cluster.}
 \label{fig:druid_cluster}
 \end{figure*}
@@ -324,7 +331,15 @@ they serve by creating ephemeral nodes under specifically configured
 Zookeeper paths. Instructions for a given compute node to load new
 segments or drop existing segments are sent by creating ephemeral
 znodes under a special “load queue” path associated with the compute
-node.
+node. Figure~\ref{fig:zookeeper} illustrates some of the Zookeeper paths that exist
+for different compute nodes.
+
+\begin{figure}
+\centering
+\includegraphics[width = 3in]{zookeeper}
+\caption{Each compute node creates ephemeral znodes under specifically configured Zookeeper paths.}
+\label{fig:zookeeper}
+\end{figure}
 
 To expose a segment for querying, a compute node must first possess a
 local copy of the segment. Before a compute node downloads a segment
@@ -359,16 +374,16 @@ available for querying. Real-time nodes are a consumer of data and
 require a corresponding producer to provide the data
 stream. Typically, for data durability purposes, a message bus such as
 Kafka \cite{kreps2011kafka} sits between the producer and the real-time node as shown
-in Figure~\ref{fig:data-ingestion}.
+in Figure~\ref{fig:data_reading}.
 
 \begin{figure}
 \centering
-\includegraphics[width = 3in]{druid_message_bus}
+\includegraphics[width = 3in]{data_reading}
 \caption{Real-time data ingestion.}
-\label{fig:data-ingestion}
+\label{fig:data_reading}
 \end{figure}
 
-The purpose of the message bus in Figure~\ref{fig:data-ingestion} is to act as a buffer for
+The purpose of the message bus in Figure~\ref{fig:data_reading} is to act as a buffer for
 incoming events. The message bus can maintain offsets indicating the
 position in an event stream that a real-time node has read up to and
 real-time nodes can update these offsets periodically. The message bus also acts as backup storage for recent events.
