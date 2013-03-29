@@ -72,5 +72,6 @@ ggplot(data = dat, aes(x = Cardinality, y = `Concise\ compressed\ size\ (bytes)`
   scale_x_log10(limits = c(1, 10^8.5)) + 
   scale_y_log10() +
   geom_hline(aes(yintercept = 9089180)) +
-  geom_text(aes(x = 1e2, y = 9089180 * 1.3, label = "Integer array size (bytes)"), hjust = 0, size = 4)
-ggsave("concise_plot.png", width = 10, height = 8)
+  geom_text(aes(x = 1e1, y = 9089180 * 1.4, label = "Integer array size (bytes)"), hjust = 0, size = 5)
+#ggsave("concise_plot.png", width = 10, height = 8)
+ggsave("../figures/concise_plot.pdf", width = 6, height = 4.5)

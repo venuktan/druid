@@ -656,6 +656,13 @@ the \texttt{bieberfever.com} and \texttt{ultratrimfast.com} arrays.
 [0][1][0][1] OR [1][0][1][0] = [1][1][1][1]
 \end{verbatim}
 
+\begin{figure}
+\centering
+\includegraphics[width = 3in]{concise_plot}
+\caption{Integer array size versus concise set size.}
+\label{fig:concise_plot}
+\end{figure}
+
 This approach of performing Boolean operations on large bitmap sets is
 commonly used in search engines. Bitmap compression algorithms are a
 well-defined area of research and often utilize run-length
@@ -663,7 +670,7 @@ encoding. Well known algorithms include Byte-aligned Bitmap Code \cite{antoshenk
 Word-Aligned Hybrid (WAH) code \cite{wu2006optimizing}, and Partitioned Word-Aligned
 Hybrid (PWAH) compression \cite{van2011memory}. Druid opted to use the CONCISE
 algorithm \cite{colantonio2010concise} as it can outperform WAH by reducing the size of the
-compressed bitmaps by up to 50\%.  Figure~\ref{fig:cluster_scan_rate} illustrates the number of
+compressed bitmaps by up to 50\%.  Figure~\ref{fig:concise_plot} illustrates the number of
 bytes using CONCISE compression versus using an integer array. The
 results were generated on a cc2.8xlarge system with a single thread,
 2G heap, 512m young gen, and a forced GC between each run. The data

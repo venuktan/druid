@@ -209,6 +209,7 @@ ggplot(data = dat2, aes(
          x = as.numeric(str_extract(nodes, "[0-9]+")),
          y = `Cluster scan rate (rows/sec)` / 1e9,
          color = query,
+         shape = query
          )) +
 #    scale_y_log10(breaks = 2^(-1:5)) +
 #  scale_color_discrete(guide = guide_legend(title = "Query")) +
@@ -241,6 +242,7 @@ ggplot(data = dat2, aes(
          x = as.numeric(str_extract(nodes, "[0-9]+")),
          y = `Core scan rate` / 1e6,
          color = query,
+         shape = query
          )) +
 
   geom_point(size = 3) +
