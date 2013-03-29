@@ -4,6 +4,7 @@
 % Removed the requirement to include *bbl file in here. (AhmetSacan, Sep2012)
 % Fixed the equation on page 3 to prevent line overflow. (AhmetSacan, Sep2012)
 
+%\documentclass[draft]{vldb}
 \documentclass{vldb}
 \usepackage{graphicx}
 \usepackage{balance}  % for  \balance command ON LAST PAGE  (only there!)
@@ -185,6 +186,7 @@ a Druid segment, consider the data set shown in Table~\ref{tab:sample_data}.
   \centering
   \caption{Sample Druid data}
   \label{tab:sample_data}
+  \texttt{
   \begin{tabular}{| l | l | l | l | l | l | l | l |}
     \hline
     \textbf{Timestamp} & \textbf{Publisher} & \textbf{Advertiser} & \textbf{Gender} & \textbf{Country} & \textbf{Impressions} & \textbf{Clicks} & \textbf{Revenue} \\ \hline
@@ -193,6 +195,7 @@ a Druid segment, consider the data set shown in Table~\ref{tab:sample_data}.
     2011-01-01T02:00:00Z & ultratrimfast.com & google.com & Male & USA & 1953 & 17 & 17.31 \\ \hline
     2011-01-01T02:00:00Z & ultratrimfast.com & google.com & Male & USA & 3194 & 170 & 34.01 \\ \hline
   \end{tabular}
+}
 \end{table*}
 
 A segment is composed of multiple binary files, each representing a
@@ -295,7 +298,7 @@ have an external dependency on a MySQL database.
 
 Druid relies on an Apache Zookeeper \cite{hunt2010zookeeper} cluster
 for coordination. This dependency is required because there is no
-direct coordination-related communication between Druid nodes. The
+direct communication between Druid nodes for the purposes of coordination. The
 following sections will discuss each Druid component in greater
 detail.
 
@@ -829,6 +832,7 @@ purpose of each of the queries. Please note:
   \centering
   \caption{Druid Queries}
   \label{tab:sql_queries}
+\texttt{
   \begin{tabular}{| l | p{15cm} |}
     \hline
     \textbf{Query \#} & \textbf{Query} \\ \hline
@@ -839,6 +843,7 @@ purpose of each of the queries. Please note:
     5 & SELECT high\_card\_dimension, count(*) AS cnt, sum(metric1) FROM \_table\_ WHERE timestamp $\geq$ ? AND timestamp < ? GROUP BY high\_card\_dimension ORDER BY cnt limit 100 \\ \hline
     6 & SELECT high\_card\_dimension, count(*) AS cnt, sum(metric1), sum(metric2), sum(metric3), sum(metric4) FROM \_table\_ WHERE timestamp $\geq$ ? AND timestamp < ? GROUP BY high\_card\_dimension ORDER BY cnt limit 100 \\ \hline
   \end{tabular}
+}
 \end{table*}
 
 Figure~\ref{fig:cluster_scan_rate} shows the cluster scan rate and
@@ -919,6 +924,8 @@ aspects such as the storage format, query language and general
 execution. In the future, we plan to cover more in depth the different
 algorithms we’ve developed for Druid and how other systems may plug
 into Druid to achieve powerful use cases.
+
+\balance
 
 \section{Acknowledgements}
 \label{sec:acknowledgements}
