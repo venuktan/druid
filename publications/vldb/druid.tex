@@ -788,6 +788,13 @@ copies of a segment, which would lead to data loss.
 
 \section{Performance Benchmarks}
 \label{sec:benchmarks}
+\begin{figure}
+\centering
+\includegraphics[width = 3in]{cluster_scan_rate}
+\caption{Druid cluster scan rate with lines indicating linear scaling
+  from 25 nodes.}
+\label{fig:cluster_scan_rate}
+\end{figure}
 To benchmark Druid performance, we created a large test cluster with
 6TB of uncompressed data, representing tens of billions of fact
 rows. The data set contained more than a dozen dimensions, with
@@ -811,14 +818,6 @@ purpose of each of the queries. Please note:
 \item A memory-mapped storage engine was used (the machine was configured to memory map the data
   instead of loading it into the Java heap.)
 \end{itemize}
-
-\begin{figure}
-\centering
-\includegraphics[width = 3in]{cluster_scan_rate}
-\caption{Druid cluster scan rate with lines indicating linear scaling
-  from 25 nodes.}
-\label{fig:cluster_scan_rate}
-\end{figure}
 
 \begin{figure}
 \centering
