@@ -146,20 +146,20 @@ is partitioned into a collection of segments, each typically comprising 5--10 mi
   \end{tabular}
 \end{table*}
 
-Druid always requires a timestamp column as a method of simplifying data distribution policies, data retention policies, and first-level query pruning. Druid partitions its data sources into well-defined time intervals, typically an hour or a day, and may further partition on value ranges from other columns to achieve the desired target segment size. Segments are uniquely identified by a data source
+Druid always requires a timestamp column as a method of simplifying data distribution policies, data retention policies, and first-level query pruning. Druid partitions its data sources into well-defined time intervals, typically an hour or a day, and may further partition on values from other columns to achieve the desired segment size. Segments are uniquely identified by a data source
 identifer, the time interval of the data, a version string that increases whenever a new segment is created, and a partition number. This segment metadata is used by the system for concurrency control; read operations always access data in a particular time range
 from the segments with the latest version identifier for that time
 range.
 
-Most segments in a Druid cluster will be immutable \emph{historical} segments. Such segments are persisted on local disk or in a distributed filesystem such as S3 \cite{decandia2007dynamo} or HDFS \cite{shvachko2010hadoop}. All historical
+Most segments in a Druid cluster are immutable \emph{historical} segments. Such segments are persisted on local disk or in a distributed filesystem such as S3 \cite{decandia2007dynamo} or HDFS \cite{shvachko2010hadoop}. All historical
 segments have associated metadata describing properties of the segment
 such as size in bytes, compression format, and location in deep
 storage. Data for intervals covered by historical segments can be updated by creating new historical segments that obsolete the old ones.
 
-Segments covering very recent intervals will be mutable \emph{real-time} segments. Real-time segments are incrementally updated as new events are ingested. Periodically, real-time segments are converted into
+Segments covering very recent intervals are mutable \emph{real-time} segments. Real-time segments are incrementally updated as new events are ingested, and are available for queries throughout the incremental indexing process. Periodically, real-time segments are converted into
 historical segments through a finalization and handoff process described in Section~\ref{sec:realtime}.
 
-Druid is best used for aggregating event streams, and both historical and real-time segments are built through an incremental indexing process that takes advantage of this assumption. Incremental indexing works by computing running aggregates of interesting metrics (number of impressions, sum of revenue, etc) across all rows that have identical attributes (publisher, advertiser, etc). This often produces an order of magnitude compression in the data without sacrificing analytical value. Of course, indexing raw data is an option as well.
+Druid is best used for aggregating event streams, and both historical and real-time segments are built through an incremental indexing process that takes advantage of this assumption. Incremental indexing works by computing running aggregates of interesting metrics (e.g. number of impressions, sum of revenue from the data in table~\ref{sec:sample_data}) across all rows that have identical attributes (e.g. publisher, advertiser). This often produces an order of magnitude compression in the data without sacrificing analytical value. Of course, this comes at the cost of not being able to support queries over the non-aggregated metrics.
 
 \section{Cluster}
 \label{sec:cluster}
