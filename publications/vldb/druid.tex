@@ -4,8 +4,8 @@
 % Removed the requirement to include *bbl file in here. (AhmetSacan, Sep2012)
 % Fixed the equation on page 3 to prevent line overflow. (AhmetSacan, Sep2012)
 
-\documentclass[draft]{vldb}
-%\documentclass{vldb}
+%\documentclass[draft]{vldb}
+\documentclass{vldb}
 \usepackage{graphicx}
 \usepackage{balance}  % for  \balance command ON LAST PAGE  (only there!)
 \usepackage{fontspec}
@@ -128,7 +128,7 @@ Metamarkets built Druid to directly address the need for a real-time analytical 
 In this paper, we make the following contributions:
 \begin{itemize}
 \item We describe Druid’s real-time data ingestion implementation.
-\item We outline how the architecture allows for fast multi-dimensional data exploration.
+\item We detail how the architecture enables fast multi-dimensional data exploration.
 \item We present Druid performance benchmarks.
 \end{itemize} 
 
@@ -354,7 +354,7 @@ somehow lost, it is still possible that segment results can still be
 returned if that information exists in the cache.
 
 \subsubsection{Timeline}
-To determine the correct nodes to forward queries to, broker nodes
+To determine the correct nodes to forward queries to, brokers
 first build a view of the world from information in Zookeeper. Recall
 that Druid uses Zookeeper to maintain information about all compute
 and real-time nodes in a cluster and the segments those nodes are
@@ -449,7 +449,7 @@ different compute nodes, and co-locating segments from different data
 sources.  To optimally distribute and balance segments among the
 cluster, we developed a cost-based optimization procedure that takes
 into account the segment data source, recency, and size. The exact
-details of the algorithm are beyond the scope of this paper.
+details of the algorithm are beyond the scope of this paper and may be discussed in future literature.
 
 \section{Query API}
 \label{sec:query-api}
@@ -493,7 +493,7 @@ A sample time series query is shown below:
 \end{verbatim}
 
 It is beyond the scope of this paper to fully describe the query API.
-We are also in the process of building out SQL support for Druid.
+We are also in the process of extending the Druid API to understand SQL.
 
 \section{Storage}
 \label{sec:storage}
@@ -529,11 +529,11 @@ publishers as follows:
 \end{verbatim}
 
 The resulting integer array lends itself very well to
-compression. Generic compression algorithms on top of encodings are
-very common in column-stores. We opted to use the LZF \cite{liblzf2013} compression
+compression methods. Generic compression algorithms on top of encodings are
+extremely common in column-stores. Druid uses the LZF \cite{liblzf2013} compression
 algorithm.
 
-We can leverage similar compression algorithms for numeric
+Similar compression methods can be applied to numeric
 columns. For example, the clicks and revenue columns in
 Table~\ref{tab:sample_data} can also be expressed as individual
 arrays.
@@ -565,9 +565,9 @@ ultratrimfast.com -> rows [2, 3] -> [0][0][1][1]
 \end{verbatim}
 
 \texttt{\href{http://bieberfever.com}{bieberfever.com}} is seen in rows \texttt{0} and \texttt{1}. This mapping of column values
-to row indices forms an inverted index \cite{tomasic1993performance}. If we want to know which
+to row indices forms an inverted index \cite{tomasic1993performance}. To know which
 rows contain {\ttfamily bieberfever.com} or {\ttfamily ultratrimfast.com}, we can \texttt{OR} together
-the \texttt{bieberfever.com} and \texttt{ultratrimfast.com} arrays.
+the two arrays.
 \begin{verbatim}
 [0][1][0][1] OR [1][0][1][0] = [1][1][1][1]
 \end{verbatim}
@@ -582,7 +582,7 @@ the \texttt{bieberfever.com} and \texttt{ultratrimfast.com} arrays.
 This approach of performing Boolean operations on large bitmap sets is
 commonly used in search engines. Bitmap compression algorithms are a
 well-defined area of research and often utilize run-length
-encoding. Well known algorithms include Byte-aligned Bitmap Code \cite{antoshenkov1995byte},
+encoding. Popular algorithms include Byte-aligned Bitmap Code \cite{antoshenkov1995byte},
 Word-Aligned Hybrid (WAH) code \cite{wu2006optimizing}, and Partitioned Word-Aligned
 Hybrid (PWAH) compression \cite{van2011memory}. Druid opted to use the Concise
 algorithm \cite{colantonio2010concise} as it can outperform WAH by reducing the size of the
@@ -595,7 +595,7 @@ hose \cite{twitter2013} data stream. The data set contains 2,272,295 rows and 12
 dimensions of varying cardinality. As an additional comparison, we
 also resorted the data set rows to maximize compression.
 
-In the unsorted case, the total Concise compressed size was 
+In the unsorted case, the total Concise size was 
 53,451,144 bytes and the total integer array size was 127,248,520 bytes. Overall,
 Concise compressed sets are about 42\% smaller than integer arrays.
 In the sorted case, the total Concise compressed size was 43,832,884
@@ -604,7 +604,7 @@ interesting to note is that after sorting, global compression only
 increased minimally. The total Concise set size to total integer array
 size is 34\%. It is also interesting to note that as the cardinality
 of a dimension approaches the total number of rows in a data set,
-integer arrays actually require less space than Concise sets.
+integer arrays require less space than Concise sets and become a better alternative.
 
 \subsection{Storage Engine}
 Druid’s persistence components allows for different storage engines to
@@ -686,7 +686,7 @@ thousands of shards roughly 8 million fact rows apiece.
 The cluster used in the benchmark consisted of 100 historical compute
 nodes, each with 16 cores, 60GB of RAM, 10 GigE Ethernet, and 1TB of
 disk space. Collectively, the cluster comprised of 1600 cores, 6TB or
-RAM, fast Ethernet and more than enough disk space.
+RAM, sufficiently fast Ethernet and more than enough disk space.
 
 SQL statements are included in Table~\ref{tab:sql_queries} to describe the
 purpose of each of the queries. Please note:
@@ -755,7 +755,7 @@ values and scan over them, increasing the amount of memory scanned.
 \section{Related Work}
 \label{sec:related}
 Cattell \cite{cattell2011scalable} maintains a great summary about existing Scalable SQL and
-NoSQL data stores. In the landscape of distributed data stores, Druid
+NoSQL data stores. Druid
 feature-wise sits somewhere between Google’s Dremel \cite{melnik2010dremel} and PowerDrill
 \cite{hall2012processing}. Druid has most of the features implemented in Dremel (Dremel
 handles arbitrary nested data structures while Druid only allows for a
@@ -763,7 +763,7 @@ single level of array-based nesting) and many of the interesting
 compression algorithms mentioned in PowerDrill.
 
 Although Druid builds on many of the same principles as other
-distributed column-oriented data stores \cite{fink2012distributed}, most existing data
+distributed columnar data stores \cite{fink2012distributed}, most existing data
 stores are designed to be key-value stores \cite{lerner2010redis}, or
 document/extensible record stores \cite{stonebraker2005c}. Such data stores are great
 solutions for traditional data warehouse needs and general
@@ -785,8 +785,8 @@ optimizing querying performance, but more so in Hadoop environments.
 
 Druid leverages a unique combination of algorithms in its
 architecture. Although we believe no other data store has the same set
-of functionality as Druid, some of Druid’s features such as using
-inverted indices to perform faster filters also exist in other data
+of functionality as Druid, some of Druid’s optimization techniques such as using
+inverted indices to perform fast filters are also used in other data
 stores \cite{macnicol2004sybase}.
 
 \section{Conclusions}
