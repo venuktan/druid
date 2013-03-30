@@ -117,61 +117,16 @@ fast ad-hoc queries on large-scale data sets. The system combines a
 columnar data layout, a shared-nothing architecture, and an advanced
 indexing structure to allow for the arbitrary exploration of billion-row
 tables with sub-second latencies. Druid scales horizontally and is the
-core engine of the Metamarkets platform. Here, we detail Druid's 
-architecture, and how it supports real-time data ingestion, querying, and analytics. 
+core engine of the Metamarkets data storage and analysis platform. Here, we detail Druid's 
+architecture, and describe how it supports real-time data ingestion, querying, and analytics. 
 \end{abstract}
 
 \section{Introduction}
-In recent years, enterprises are facing ever-growing collections of
-data in all forms. The scale of data has reached terabytes, even
-petabytes of information per day. Companies are increasingly realizing
-the importance of unlocking the insights contained within this
-data. Numerous database vendors such as IBM’s Netezza \cite{singh2011introduction}, Vertica
-\cite{bear2012vertica}, and EMC’s Greenplum \cite{miner2012unified} offer data warehousing solutions, and
-several research papers \cite{barroso2009datacenter,
-chaudhuri1997overview, dewitt1992parallel} directly address this problem as
-well. As the interactive data exploration space becomes more mature,
-it is apparent that real-time ingestion and exploration of data will
-unlock business-critical decisions for front office and back office
-analysts.
+Enterprises routinely collect diverse data sets that can contain up to terabytes of information per day. Companies are increasingly realizing the importance of efficiently storing and analyzing this data in order to increase both productivity and profitability. Numerous datbase systems (e.g., IBM’s Netezza \cite{singh2011introduction}, HP's Vertica \cite{bear2012vertica}, EMC’s Greenplum \cite{miner2012unified}) and several several research papers \cite{barroso2009datacenter, chaudhuri1997overview, dewitt1992parallel} offer solutions for how to store large data sets. However, many of these Relational Database Management Systems (RDBMS) and NoSQL architectures do not allow for fast queries and subsequent analyses on the data they contain. 
 
-Metamarkets realized early on that for high data volumes, existing
-Relational Database Management Systems (RDBMS) and most NoSQL
-architectures were not sufficient to address the performance and
-use-case needs of the business intelligence space. Druid was built to
-address a gap we believe exists in the current big-data ecosystem for
-a real-time analytical data store. Druid is a distributed, columnar,
-shared-nothing data store designed to reliably scale to petabytes of
-data and thousands of cores. It is a highly available system designed
-to run on commodity hardware with no downtime in the face of failures,
-data imports or software updates. We have been building Druid over the
-course of the last two years and it is the core engine of the
-Metamarkets technology stack.
+Metamarkets built Druid to directly address the need for a real-time analytical data store in the big-data ecosystem. Druid shares similarities with other interactive query systems \cite{melnik2010dremel}, main-memory databases \cite{farber2012sap}, and distributed data stores such as BigTable \cite{chang2008bigtable}, Dynamo \cite{decandia2007dynamo}, and Cassandra \cite{lakshman2010cassandra}. Unlike most traditional data stores, Druid operates mainly on read-only data and has limited functionality for writes. The system is highly optimized for large-scale event data aggregation and arbitrarily deep data exploration. Furthermore, Druid is highly configurable and allows users to easily adjust fault tolerance and performance properties.
 
-In many ways, Druid shares similarities with other interactive query systems
-\cite{melnik2010dremel}, main-memory databases \cite{farber2012sap}, and widely-known distributed data
-stores such as BigTable \cite{chang2008bigtable}, Dynamo \cite{decandia2007dynamo}, and Cassandra \cite{lakshman2010cassandra}. Unlike
-most traditional data stores, Druid operates mainly on read-only data
-and has limited functionality for writes. The system is highly optimized
-for large-scale event data aggregation and arbitrarily deep data exploration. Druid is highly configurable
-and allows users to adjust levels of fault tolerance and
-performance.
-
-Druid builds on the ideas of other distributed data stores, real-time
-computation engines, and search engine indexing algorithms. In this
-paper, we outline Druid's real-time ingestion and query capabilities
-and explain how we can explore events within milliseconds of their
-creation.  We describe how the architecture allows for fast and flexible
-queries, how inverted indices can be applied to quickly filter
-data, and present experiments benchmarking Druid’s performance.
-
-The format of the paper is as follows: Section \ref{sec:data-model} describes the Druid
-data model. Section \ref{sec:cluster} presents an overview of the components of a
-Druid cluster. Section \ref{sec:query-api} outlines the query API. Section \ref{sec:storage} describes
-data storage format in greater detail. Section \ref{sec:robustness} discusses Druid
-robustness and failure responsiveness. Section \ref{sec:benchmarks} provides our
-performance benchmarks. Section \ref{sec:related} lists the related work and Section \ref{sec:conclusions} presents
-our conclusions.
+In this paper, we describe Druid's design and implementation in detail. The outline is as follows: Section \ref{sec:data-model} describes the Druid data model. Section \ref{sec:cluster} presents an overview of the components of a Druid cluster. Section \ref{sec:query-api} outlines the query API. Section \ref{sec:storage} describes data storage format in greater detail. Section \ref{sec:robustness} discusses Druid robustness and failure responsiveness. Section \ref{sec:benchmarks} presents experiments benchmarking query performance. Section \ref{sec:related} discusses related work and Section \ref{sec:conclusions} presents our conclusions.
 
 \section{Data Model}
 \label{sec:data-model}
