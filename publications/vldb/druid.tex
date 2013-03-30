@@ -117,20 +117,29 @@ fast ad-hoc queries on large-scale data sets. The system combines a
 columnar data layout, a shared-nothing architecture, and an advanced
 indexing structure to allow for the arbitrary exploration of billion-row
 tables with sub-second latencies. Druid scales horizontally and is the
-core engine of the Metamarkets interactive data analysis platform. Here, we detail Druid's architecture, and describe how it supports real-time data ingestion, querying, and analytics. 
+core engine of the Metamarkets interactive data analysis platform. In this paper, we detail Druid's architecture, and describe how it supports real-time data ingestion, querying, and analytics. 
 \end{abstract}
 
 \section{Introduction}
 Enterprises routinely collect diverse data sets that can contain up to terabytes of information per day. Companies are increasingly realizing the importance of efficiently storing and analyzing this data in order to increase both productivity and profitability. Numerous database systems (e.g., IBM’s Netezza \cite{singh2011introduction}, HP's Vertica \cite{bear2012vertica}, EMC’s Greenplum \cite{miner2012unified}) and several research papers \cite{barroso2009datacenter, chaudhuri1997overview, dewitt1992parallel} offer solutions for how to store and extract information from large data sets. However, many of these Relational Database Management Systems (RDBMS) and NoSQL architectures do not support interactive queries and real-time data ingestion.
 
-Metamarkets built Druid to directly address the need for a real-time analytical data store in the big-data ecosystem. Druid shares some similarities with main-memory databases \cite{farber2012sap} and interactive query systems such as Dremel \cite{melnik2010dremel} and PowerDrill \cite{hall2012processing}. Druid's focus is fast aggregations, arbitrarily deep data exploration, and low-latency data ingestion. Furthermore, Druid is highly configurable and allows users to easily adjust fault tolerance and performance properties. Queries on in-memory data typically complete in seconds or less, and real-time data ingestion means that new events are immediately available for analysis.
+Metamarkets built Druid to directly address the need for a real-time analytical data store in the big-data ecosystem. Druid shares some similarities with main-memory databases \cite{farber2012sap} and interactive query systems such as Dremel \cite{melnik2010dremel} and PowerDrill \cite{hall2012processing}. Druid's focus is fast aggregations, arbitrarily deep data exploration, and low-latency data ingestion. Furthermore, Druid is highly configurable and allows users to easily adjust fault tolerance and performance properties. Queries on in-memory data typically complete in millseconds, and real-time data ingestion means that new events are immediately available for analysis.
 
-In this paper, we describe Druid's design and implementation in detail. The outline is as follows: Section \ref{sec:data-model} describes the Druid data model. Section \ref{sec:cluster} presents an overview of the components of a Druid cluster. Section \ref{sec:query-api} outlines the query API. Section \ref{sec:storage} describes data storage format in greater detail. Section \ref{sec:robustness} discusses Druid robustness and failure responsiveness. Section \ref{sec:benchmarks} presents experiments benchmarking query performance. Section \ref{sec:related} discusses related work and Section \ref{sec:conclusions} presents our conclusions.
+In this paper, we make the following contributions:
+\begin{itemize}
+\item We describe Druid’s real-time data ingestion implementation
+\item We outline how the architecture allows for fast multi-dimensional data exploration
+\item We present Druid performance benchmarks
+\end{itemize} 
+
+The outline is as follows: Section \ref{sec:data-model} describes the Druid data model. Section \ref{sec:cluster} presents an overview of the components of a Druid cluster. Section \ref{sec:query-api} outlines the query API. Section \ref{sec:storage} describes data storage format in greater detail. Section \ref{sec:robustness} discusses Druid robustness and failure responsiveness. Section \ref{sec:benchmarks} presents experiments benchmarking query performance. Section \ref{sec:related} discusses related work and Section \ref{sec:conclusions} presents our conclusions.
 
 \section{Data Model}
 \label{sec:data-model}
 The fundamental storage unit in Druid is the segment. Each table in Druid (called a \emph{data source})
-is partitioned into a collection of segments, each typically comprising 5--10 million rows.
+is partitioned into a collection of segments, each typically comprising 5--10 million rows. A sample table 
+containing advertising data is shown in Table~\ref{tab:sample_data}. We will refer to this table in our examples
+in later sections.
 
 \begin{table*}
   \centering
@@ -151,7 +160,7 @@ identifer, the time interval of the data, a version string that increases whenev
 from the segments with the latest version identifier for that time
 range.
 
-Most segments in a Druid cluster are immutable \emph{historical} segments. Such segments are persisted on local disk or in a distributed filesystem such as S3 \cite{decandia2007dynamo} or HDFS \cite{shvachko2010hadoop}. All historical
+Most segments in a Druid cluster are immutable \emph{historical} segments. Such segments are persisted on local disk or in a distributed filesystem ("deep" storage) such as S3 \cite{decandia2007dynamo} or HDFS \cite{shvachko2010hadoop}. All historical
 segments have associated metadata describing properties of the segment
 such as size in bytes, compression format, and location in deep
 storage. Data for intervals covered by historical segments can be updated by creating new historical segments that obsolete the old ones.
@@ -159,7 +168,7 @@ storage. Data for intervals covered by historical segments can be updated by cre
 Segments covering very recent intervals are mutable \emph{real-time} segments. Real-time segments are incrementally updated as new events are ingested, and are available for queries throughout the incremental indexing process. Periodically, real-time segments are converted into
 historical segments through a finalization and handoff process described in Section~\ref{sec:realtime}.
 
-Druid is best used for aggregating event streams, and both historical and real-time segments are built through an incremental indexing process that takes advantage of this assumption. Incremental indexing works by computing running aggregates of interesting metrics (e.g. number of impressions, sum of revenue from the data in table~\ref{tab:sample_data}) across all rows that have identical attributes (e.g. publisher, advertiser). This often produces an order of magnitude compression in the data without sacrificing analytical value. Of course, this comes at the cost of not being able to support queries over the non-aggregated metrics.
+Druid is best used for aggregating event streams, and both historical and real-time segments are built through an incremental indexing process that takes advantage of this assumption. Incremental indexing works by computing running aggregates of interesting metrics (e.g. number of impressions, sum of revenue from the data in Table~\ref{tab:sample_data}) across all rows that have identical attributes (e.g. publisher, advertiser). This often produces an order of magnitude compression in the data without sacrificing analytical value. Of course, this comes at the cost of not being able to support queries over the non-aggregated metrics.
 
 \section{Cluster}
 \label{sec:cluster}
@@ -174,8 +183,7 @@ Figure~\ref{fig:druid_cluster}.
 \label{fig:druid_cluster}
 \end{figure*}
 
-Recall that data in Druid is classified as either real-time or
-historical. The Druid cluster is architected to reflect this
+Recall Druid has the notion of historical and real-time segments. The Druid cluster is architected to reflect this
 conceptual separation of data. Real-time nodes are responsible for
 ingesting, storing, and responding to queries for the most recent
 events. Similarly, historical compute nodes are responsible for
@@ -187,7 +195,7 @@ typically first hit a layer of broker nodes. Broker nodes are
 responsible for finding and routing queries down to the storage nodes
 that host the pertinent data. The storage nodes compute their portion
 of the query response in parallel and return their results to the
-brokers. Broker nodes, compute nodes, and realtime nodes can all be
+brokers. Broker nodes, compute nodes, and realtime nodes are jointly
 classified as queryable nodes.
 
 Druid also has a set of coordination nodes to manage load assignment,
@@ -212,8 +220,16 @@ they serve by creating ephemeral nodes under specifically configured
 Zookeeper paths. Instructions for a given compute node to load new
 segments or drop existing segments are sent by creating ephemeral
 znodes under a special “load queue” path associated with the compute
-node. Figure~\ref{fig:zookeeper} illustrates some of the Zookeeper paths that exist
-for different compute nodes.
+node. Figure~\ref{fig:zookeeper} illustrates a simple compute node and Zookeeper interaction. 
+Each compute node announces themselves under an "announcements" path when they come online
+and each compute has a load queue path associated with it.
+
+\begin{figure}
+\centering
+\includegraphics[width = 3in]{zookeeper}
+\caption{Each compute node creates ephemeral znodes under specifically configured Zookeeper paths.}
+\label{fig:zookeeper}
+\end{figure}
 
 To expose a segment for querying, a compute node must first possess a
 local copy of the segment. Before a compute node downloads a segment
@@ -226,13 +242,6 @@ storage and about how to decompress and process the segment. Once a
 compute node completes processing a segment, the node announces (in
 Zookeeper) that it is serving the segment. At this point, the segment
 is queryable.
-
-\begin{figure}
-\centering
-\includegraphics[width = 3in]{zookeeper}
-\caption{Each compute node creates ephemeral znodes under specifically configured Zookeeper paths.}
-\label{fig:zookeeper}
-\end{figure}
 
 \subsubsection{Tiers}
 \label{sec:tiers}
