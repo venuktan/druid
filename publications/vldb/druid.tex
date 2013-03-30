@@ -114,10 +114,10 @@
 \begin{abstract}
 Druid is an open source\footnote{\href{https://github.com/metamx/druid}{https://github.com/metamx/druid}}, real-time analytical data store that supports
 fast ad-hoc queries on large-scale data sets. The system combines a
-columnar data layout, a shared-nothing architecture, and an advanced
+column-oriented data layout, a shared-nothing architecture, and an advanced
 indexing structure to allow for the arbitrary exploration of billion-row
 tables with sub-second latencies. Druid scales horizontally and is the
-core engine of the Metamarkets interactive data analysis platform. In this paper, we detail Druid's architecture, and describe how it supports real-time data ingestion, querying, and analytics. 
+core engine of the Metamarkets data analytics platform. In this paper, we detail Druid's architecture, and describe how it supports real-time data ingestion and interactive analytical queries. 
 \end{abstract}
 
 \section{Introduction}
@@ -178,7 +178,7 @@ Figure~\ref{fig:druid_cluster}.
 
 \begin{figure*}
 \centering
-\includegraphics[width = 5.2in]{druid_cluster}
+\includegraphics[width = 4.5in]{druid_cluster}
 \caption{An overview of a Druid cluster.}
 \label{fig:druid_cluster}
 \end{figure*}
@@ -203,7 +203,7 @@ distribution, and replication. Coordination nodes are not queryable
 and instead focus on maintaining cluster stability. Coordination nodes
 have an external dependency on a MySQL database.
 
-Druid relies on an Apache Zookeeper \cite{hunt2010zookeeper} cluster
+Druid relies on Apache Zookeeper \cite{hunt2010zookeeper} 
 for coordination.
 
 \subsection{Historical Compute Nodes}
@@ -226,8 +226,8 @@ and each compute has a load queue path associated with it.
 
 \begin{figure}
 \centering
-\includegraphics[width = 3in]{zookeeper}
-\caption{Each compute node creates ephemeral znodes under specifically configured Zookeeper paths.}
+\includegraphics[width = 2.8in]{zookeeper}
+\caption{Compute nodes create ephemeral znodes under specifically configured Zookeeper paths.}
 \label{fig:zookeeper}
 \end{figure}
 
@@ -266,13 +266,6 @@ stream. Typically, for data durability purposes, a message bus such as
 Kafka \cite{kreps2011kafka} sits between the producer and the real-time node as shown
 in Figure~\ref{fig:data_reading}.
 
-\begin{figure}
-\centering
-\includegraphics[width = 3in]{data_reading}
-\caption{Real-time data ingestion.}
-\label{fig:data_reading}
-\end{figure}
-
 The purpose of the message bus in Figure~\ref{fig:data_reading} is to act as a buffer for
 incoming events. The message bus can maintain offsets indicating the
 position in an event stream that a real-time node has read up to and
@@ -300,13 +293,6 @@ and provide a signal for the historical compute nodes to begin serving
 the segment. The ingest, persist, merge, and handoff steps are fluid;
 there is no data loss as a real-time node converts a real-time segment
 to a historical one. Figure~\ref{fig:data-durability} illustrates the process.
-
-\begin{figure}
-\centering
-\includegraphics[width = 3in]{druid_realtime_flow}
-\caption{Real-time data durability}
-\label{fig:data-durability}
-\end{figure}
 
 Similar to compute nodes, real-time nodes announce segments in
 Zookeeper. Unlike historical segments, real-time segments may
@@ -338,6 +324,20 @@ is serving and each real-time segment has a partition number.  Data
 from individual nodes will be merged at the Broker level.  To our
 knowledge, the largest production level real-time Druid cluster is
 consuming approximately 500MB/s (150,000 events/s or 2 TB/hour of raw data).
+
+\begin{figure}
+\centering
+\includegraphics[width = 2.8in]{data_reading}
+\caption{Real-time data ingestion.}
+\label{fig:data_reading}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width = 2.8in]{druid_realtime_flow}
+\caption{Real-time data durability}
+\label{fig:data-durability}
+\end{figure}
 
 \subsection{Broker Nodes}
 Broker nodes act as query routers to other queryable nodes such as
@@ -418,13 +418,17 @@ do. The compute node maintains a similar connection to Zookeeper to
 monitor for new work.
 
 \subsubsection{Rules}
-Historical segments are loaded and dropped from the cluster based on a
-set of rules. Rules indicate how segments should be assigned to
+Rules govern how historical segments are loaded and dropped from the cluster. 
+Rules indicate how segments should be assigned to
 different compute node tiers and how many replicates of a segment
 should exist in each tier. Rules may also indicate when segments
-should be dropped entirely from the cluster. The master loads a set of
+should be dropped entirely from the cluster. Rules are usually set for a period of time. 
+For example, a user may use rules to load the most recent one month's worth of segments into a "hot" cluster, 
+the most recent one year's worth of segments into a "cold" cluster, and drop any segments that are older.
+
+The master loads a set of
 rules from a rule table in the MySQL database. Rules may be specific
-to a certain data source and/or a default set of rules can be
+to a certain data source and/or a default set of rules may be
 configured. The master will cycle through all available segments and
 match each segment with the first rule that applies to it.
 
@@ -448,12 +452,24 @@ details of the algorithm are beyond the scope of this paper.
 
 \section{Query API}
 \label{sec:query-api}
-Queries to Druid are made in the form of POST requests. All queryable
-Druid nodes share the same query API. The body of the POST request is
+Druid has its own query language and accepts queries as POST requests. All queryable
+Druid nodes share the same query API.
+
+The body of the POST request is
 a JSON object containing key-value pairs specifying various query
 parameters. A typical query will contain the data source name, the
-granularity of the result data, the time range of interest, and the
-type of request.  A sample time series query is shown below:
+granularity of the result data, time range of interest, the
+type of request, and the metrics to aggregate over. The result will also be a JSON object
+containing the aggregated metrics over the time period.
+
+Most query types will also support a filter set. A filter set is a Boolean expression of dimension name and value
+pairs. Any number and combination of dimensions and values may be specified.
+When a filter set is provided, only the subset of the data that pertains to the filter set is ever scanned.
+The ability to handle complex nested filter sets is what enables Druid 
+to drill into data at any depth.
+
+The exact query syntax depends on the query type and the information requested.
+A sample time series query is shown below:
 \begin{verbatim}
 {
   "queryType"     : "timeseries",
@@ -475,13 +491,7 @@ type of request.  A sample time series query is shown below:
 }
 \end{verbatim}
 
-Certain query types will also support a filter set. A filter set is an
-arbitrary Boolean expression of dimension name and value
-pairs. Support for complex nested filter sets enables flexibility and
-provides the ability to deeply explore data.
-
-The exact query syntax depends on the query type and the information requested.
-It is beyond the scope of this paper to describe the Query API in full detail.
+It is beyond the scope of this paper to fully describe the query API.
 We are also in the process of building out SQL support for Druid.
 
 \section{Storage}
