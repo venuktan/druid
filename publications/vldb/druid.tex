@@ -127,9 +127,9 @@ Metamarkets built Druid to directly address the need for a real-time analytical 
 
 In this paper, we make the following contributions:
 \begin{itemize}
-\item We describe Druid’s real-time data ingestion implementation
-\item We outline how the architecture allows for fast multi-dimensional data exploration
-\item We present Druid performance benchmarks
+\item We describe Druid’s real-time data ingestion implementation.
+\item We outline how the architecture allows for fast multi-dimensional data exploration.
+\item We present Druid performance benchmarks.
 \end{itemize} 
 
 The outline is as follows: Section \ref{sec:data-model} describes the Druid data model. Section \ref{sec:cluster} presents an overview of the components of a Druid cluster. Section \ref{sec:query-api} outlines the query API. Section \ref{sec:storage} describes data storage format in greater detail. Section \ref{sec:robustness} discusses Druid robustness and failure responsiveness. Section \ref{sec:benchmarks} presents experiments benchmarking query performance. Section \ref{sec:related} discusses related work and Section \ref{sec:conclusions} presents our conclusions.
@@ -183,7 +183,7 @@ Figure~\ref{fig:druid_cluster}.
 \label{fig:druid_cluster}
 \end{figure*}
 
-Recall Druid has the notion of historical and real-time segments. The Druid cluster is architected to reflect this
+Recall that the Druid data model has the notion of historical and real-time segments. The Druid cluster is architected to reflect this
 conceptual separation of data. Real-time nodes are responsible for
 ingesting, storing, and responding to queries for the most recent
 events. Similarly, historical compute nodes are responsible for
@@ -204,7 +204,8 @@ and instead focus on maintaining cluster stability. Coordination nodes
 have an external dependency on a MySQL database.
 
 Druid relies on Apache Zookeeper \cite{hunt2010zookeeper} 
-for coordination.
+for coordination. Most intra-cluster communication is over Zookeeper, although
+queries are typically forwarded over HTTP.
 
 \subsection{Historical Compute Nodes}
 Historical compute nodes are the main workers of a Druid cluster and
@@ -321,7 +322,7 @@ consume events from the same stream, and every individual node only
 holds a portion of the total number of events.  This creates natural
 partitions across nodes. Each node announces the real-time segment it
 is serving and each real-time segment has a partition number.  Data
-from individual nodes will be merged at the Broker level.  To our
+from individual nodes will be merged at the broker level.  To our
 knowledge, the largest production level real-time Druid cluster is
 consuming approximately 500MB/s (150,000 events/s or 2 TB/hour of raw data).
 
@@ -353,11 +354,11 @@ somehow lost, it is still possible that segment results can still be
 returned if that information exists in the cache.
 
 \subsubsection{Timeline}
-To determine the correct nodes to forward queries to, Broker nodes
+To determine the correct nodes to forward queries to, broker nodes
 first build a view of the world from information in Zookeeper. Recall
 that Druid uses Zookeeper to maintain information about all compute
 and real-time nodes in a cluster and the segments those nodes are
-serving. For every data source in Zookeeper, the Broker node builds a
+serving. For every data source in Zookeeper, the broker node builds a
 timeline of segments for the data source and the nodes that serve them. A timeline
 consists of segments and represents which segments contain data for
 what ranges of time. Druid may have multiple segments where the data
@@ -365,7 +366,7 @@ source and interval are the same but versions differ. The timeline
 view will always surface segments with the most recent version
 identifier for a time range. If two segments intervals overlap, the segment with the more recent
 version always has precedence. When queries are received for a specific
-data source and interval, the Broker node performs a lookup on the
+data source and interval, the broker node performs a lookup on the
 timeline associated with the query data source for the query interval
 and retrieves the segments that contain data for the query. The broker
 node maps these segments to the storage nodes that serve them and
@@ -464,7 +465,7 @@ containing the aggregated metrics over the time period.
 
 Most query types will also support a filter set. A filter set is a Boolean expression of dimension name and value
 pairs. Any number and combination of dimensions and values may be specified.
-When a filter set is provided, only the subset of the data that pertains to the filter set is ever scanned.
+When a filter set is provided, only the subset of the data that pertains to the filter set will be scanned.
 The ability to handle complex nested filter sets is what enables Druid 
 to drill into data at any depth.
 
@@ -583,10 +584,10 @@ commonly used in search engines. Bitmap compression algorithms are a
 well-defined area of research and often utilize run-length
 encoding. Well known algorithms include Byte-aligned Bitmap Code \cite{antoshenkov1995byte},
 Word-Aligned Hybrid (WAH) code \cite{wu2006optimizing}, and Partitioned Word-Aligned
-Hybrid (PWAH) compression \cite{van2011memory}. Druid opted to use the CONCISE
+Hybrid (PWAH) compression \cite{van2011memory}. Druid opted to use the Concise
 algorithm \cite{colantonio2010concise} as it can outperform WAH by reducing the size of the
 compressed bitmaps by up to 50\%.  Figure~\ref{fig:concise_plot} illustrates the number of
-bytes using CONCISE compression versus using an integer array. The
+bytes using Concise compression versus using an integer array. The
 results were generated on a cc2.8xlarge system with a single thread,
 2G heap, 512m young gen, and a forced GC between each run. The data
 set is a single day’s worth of data collected from the Twitter garden
@@ -594,21 +595,21 @@ hose \cite{twitter2013} data stream. The data set contains 2,272,295 rows and 12
 dimensions of varying cardinality. As an additional comparison, we
 also resorted the data set rows to maximize compression.
 
-In the unsorted case, the total CONCISE compressed size was 53,451,144
-bytes and the total integer array size was 127,248,520 bytes. Overall,
-CONCISE compressed sets are about 42\% smaller than integer arrays.
-In the sorted case, the total CONCISE compressed size was 43,832,884
+In the unsorted case, the total Concise compressed size was 
+53,451,144 bytes and the total integer array size was 127,248,520 bytes. Overall,
+Concise compressed sets are about 42\% smaller than integer arrays.
+In the sorted case, the total Concise compressed size was 43,832,884
 bytes and the total integer array size was 127,248,520 bytes.  What is
 interesting to note is that after sorting, global compression only
-increased minimally. The total CONCISE set size to total integer array
+increased minimally. The total Concise set size to total integer array
 size is 34\%. It is also interesting to note that as the cardinality
 of a dimension approaches the total number of rows in a data set,
-integer arrays actually require less space than CONCISE sets.
+integer arrays actually require less space than Concise sets.
 
 \subsection{Storage Engine}
 Druid’s persistence components allows for different storage engines to
 be plugged in, similar to Dynamo \cite{decandia2007dynamo}. These storage engines may store
-data in in-memory structures such as the JVM heap or in memory mapped
+data in in-memory structures such as the JVM heap or in memory-mapped
 structures. The ability to swap storage engines allows for Druid to be
 configured depending on a particular application’s specifications. An
 in-memory storage engine may be operationally more expensive than a
@@ -616,7 +617,7 @@ memory-mapped storage engine but could be a better alternative if
 performance is critical. At Metamarkets, we commonly use a
 memory-mapped storage engine.
 
-\section{Robustness and Fault-Tolerance}
+\section{Robustness}
 \label{sec:robustness}
 To achieve high system availability and data durability, Druid employs
 several fault recovery techniques. Druid has no single point of
@@ -631,10 +632,11 @@ assigned to compute nodes by coordination nodes using the same load
 distribution algorithm discussed in Section~\ref{sec:caching}. Broker nodes forward queries to the first node they find that contain a segment required for the query.
 
 Real-time segments follow a different replication model as real-time
-segments are mutable. Recall that real-time nodes act as consumers of
-a data stream. Multiple real-time nodes can read from the same message
-bus if each maintains a unique offset, hence creating multiple copies
-of a real-time segment. If a real-time node fails and recovers, it can
+segments are mutable. Multiple real-time nodes can read from the same message
+bus and event stream if each node maintains a unique offset and consumer id, hence creating multiple copies
+of a real-time segment. This is conceptually different than multiple
+nodes reading from the same event stream and sharing the same offset and consumer id, doing so would create
+multiple segment partitions. If a real-time node fails and recovers, it can
 reload any indexes that were persisted to disk and read from the
 message bus from the point it last committed an offset.
 
@@ -647,25 +649,28 @@ redistributed throughout the cluster.
 
 We are moving towards building out infrastructure to support
 programmatic creation of real-time nodes. In the near future, the
-master node will also notice if real-time segments are insufficiently
+master node or a similar service will notice if real-time segments are insufficiently
 replicated and automatically create additional real-time nodes as
 redundant backups.
 
+Coordination and broker nodes always have redundant backup nodes in the event
+the primary fails. The backup nodes are usually idle until Zookeeper changes alert
+them to assume the responsibilities of their primary counterparts.
+
 \subsection{Adding and Removing Nodes}
-Starting and removing Druid nodes is a relatively simple process; all
-that is required is to start and stop Java processes. There is minimal
+Starting and removing Druid nodes is done by starting and stopping Java processes. There is minimal
 operational overhead with adding nodes in batches. Scaling down the
 cluster is usually done one node at a time with some time lapse
 between shutdowns. This allows the master to have ample time to
 redistribute load and create additional replicates. Shutting down
-nodes in batches is generally not supported as it may destroy all
+nodes in batches is not recommended as it may destroy all
 copies of a segment, which would lead to data loss.
 
 \section{Performance Benchmarks}
 \label{sec:benchmarks}
 \begin{figure}
 \centering
-\includegraphics[width = 3in]{cluster_scan_rate}
+\includegraphics[width = 2.8in]{cluster_scan_rate}
 \caption{Druid cluster scan rate with lines indicating linear scaling
   from 25 nodes.}
 \label{fig:cluster_scan_rate}
@@ -696,7 +701,7 @@ purpose of each of the queries. Please note:
 
 \begin{figure}
 \centering
-\includegraphics[width = 3in]{core_scan_rate}
+\includegraphics[width = 2.8in]{core_scan_rate}
 \caption{Druid core scan rate.}
 \label{fig:core_scan_rate}
 \end{figure}
@@ -800,12 +805,8 @@ into Druid to achieve powerful use cases.
 
 \section{Acknowledgements}
 \label{sec:acknowledgements}
-We want to thank Steve Harris and Jaypal Sethi for their feedback on improving this paper.
-We also want to give recognition to Adam Smith; without him the first Metamarkets hackathon would not have
-been organized and this paper would not have been created. Another special recognition to Katherine Chu for
-helping to create all the images in this paper.
-
-Druid could not have been built without the help of many great
+We want to thank Steve Harris for his feedback on improving this paper, Adam Smith for giving us the chance to write this paper, and Katherine Chu for
+helping to create all the images in this paper. Druid could not have been built without the help of many great
 engineers at Metamarkets and in the community. We want to thank Danny Yuan, Jae Hyeon Bae, Paul Baclace, Dave
 Nielsen, and Dhruv Parthasarathy for their
 contributions to Druid.
