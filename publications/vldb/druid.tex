@@ -112,29 +112,25 @@
 \maketitle
 
 \begin{abstract}
-Druid is a scalable, real-time analytical data store that supports
+Druid is an open source\footnote{https://github.com/metamx/druid}, real-time analytical data store that supports
 fast ad-hoc queries on large-scale data sets. The system combines a
 columnar data layout, a shared-nothing architecture, and an advanced
 indexing structure to allow for the arbitrary exploration of billion-row
 tables with sub-second latencies. Druid scales horizontally and is the
-core engine of the Metamarkets technology platform. Here, we detail Druid's 
-architecture, and describe how it supports real-time data ingestion, querying, and analytics. 
+core engine of the Metamarkets interactive data analysis platform. Here, we detail Druid's architecture, and describe how it supports real-time data ingestion, querying, and analytics. 
 \end{abstract}
 
 \section{Introduction}
 Enterprises routinely collect diverse data sets that can contain up to terabytes of information per day. Companies are increasingly realizing the importance of efficiently storing and analyzing this data in order to increase both productivity and profitability. Numerous database systems (e.g., IBM’s Netezza \cite{singh2011introduction}, HP's Vertica \cite{bear2012vertica}, EMC’s Greenplum \cite{miner2012unified}) and several research papers \cite{barroso2009datacenter, chaudhuri1997overview, dewitt1992parallel} offer solutions for how to store and extract information from large data sets. However, many of these Relational Database Management Systems (RDBMS) and NoSQL architectures do not support interactive queries and real-time data ingestion.
 
-Metamarkets built Druid to directly address the need for a real-time analytical data store in the big-data ecosystem. Druid shares similarities with other interactive query systems \cite{melnik2010dremel}, main-memory databases \cite{farber2012sap}, and distributed data stores such as BigTable \cite{chang2008bigtable}, Dynamo \cite{decandia2007dynamo}, and Cassandra \cite{lakshman2010cassandra}. Unlike most traditional data stores, Druid operates mainly on read-only data and has limited functionality for writes. The system is highly optimized for large-scale event data aggregation and arbitrarily deep data exploration. Furthermore, Druid is highly configurable and allows users to easily adjust fault tolerance and performance properties.
+Metamarkets built Druid to directly address the need for a real-time analytical data store in the big-data ecosystem. Druid shares some similarities with main-memory databases \cite{farber2012sap} and interactive query systems such as Dremel \cite{melnik2010dremel} and PowerDrill \cite{hall2012processing}. Druid's focus is fast aggregations, arbitrarily deep data exploration, and low-latency data ingestion. Furthermore, Druid is highly configurable and allows users to easily adjust fault tolerance and performance properties. Queries on in-memory data typically complete in seconds or less, and real-time data ingestion means that new events are immediately available for analysis.
 
 In this paper, we describe Druid's design and implementation in detail. The outline is as follows: Section \ref{sec:data-model} describes the Druid data model. Section \ref{sec:cluster} presents an overview of the components of a Druid cluster. Section \ref{sec:query-api} outlines the query API. Section \ref{sec:storage} describes data storage format in greater detail. Section \ref{sec:robustness} discusses Druid robustness and failure responsiveness. Section \ref{sec:benchmarks} presents experiments benchmarking query performance. Section \ref{sec:related} discusses related work and Section \ref{sec:conclusions} presents our conclusions.
 
 \section{Data Model}
 \label{sec:data-model}
-The fundamental storage unit in Druid is the segment. Distribution and
-replication in Druid are always done at a segment level. Segments
-encapsulate a partition of a larger transactional data set. To better
-understand how a typical row/column collection of data translates into
-a Druid segment, consider the data set shown in Table~\ref{tab:sample_data}.
+The fundamental storage unit in Druid is the segment. Each table in Druid (called a \emph{data source})
+is partitioned into a collection of segments, each typically comprising 5--10 million rows.
 
 \begin{table*}
   \centering
@@ -150,69 +146,20 @@ a Druid segment, consider the data set shown in Table~\ref{tab:sample_data}.
   \end{tabular}
 \end{table*}
 
-A segment is composed of multiple binary files, each representing a
-column of a data set as shown in Figure~\ref{fig:druid_segment}. The data set in Table~\ref{tab:sample_data} consists of 8 distinct
-columns, one of which is the timestamp column. Druid always requires a
-timestamp column as a method of simplifying data distribution, data retention policies and
-first-level query pruning.  Segments always represent some time interval and each column
-contains the specific values for that column over the time
-interval. Since segments always contain data for a time range, it is
-logical that Druid partitions data into smaller chunks based on the
-timestamp value. In other words, segments can be thought of as blocks
-of data that represent a certain granularity of time. For example, if
-we wanted to shard the data in Table~\ref{tab:sample_data} to an hourly granularity, the
-partitioning algorithm would result in two segments, one representing
-each hour of 2011-01-01. Similarly, if we sharded the data to a daily
-granularity, we would create a single segment for 2011-01-01.
+Druid always requires a timestamp column as a method of simplifying data distribution policies, data retention policies, and first-level query pruning. Druid partitions its data sources into well-defined time intervals, typically an hour or a day, and may further partition on value ranges from other columns to achieve the desired target segment size. Segments are uniquely identified by a data source
+identifer, the time interval of the data, a version string that increases whenever a new segment is created, and a partition number. This segment metadata is used by the system for concurrency control; read operations always access data in a particular time range
+from the segments with the latest version identifier for that time
+range.
 
-Partitioning the data based on granularity buckets allows users to
-fine tune the degree of parallelization they want in Druid. A data set
-representing a year’s worth of data may be bucketed by day, and a data
-set representing only a day’s worth of day may be partitioned by
-hour. Sharding on a single dimension (time) may still result in segments that are too large to manage if the data volume is sufficiently high.
-To create more operable partition chunks, Druid may
-additionally shard data based on other factors such as dimension
-cardinality. Each shard creates a segment and hence, segments are uniquely identified by a data source
-id describing the data, the time interval of the data, a version
-indicating when the segment was created, and a shard partition number.
-
-\begin{figure}
-\centering
-\includegraphics[width = 2in]{druid_segment}
-\caption{Druid segment.}
-\label{fig:druid_segment}
-\end{figure}
-
-Data in Druid can be conceptually thought of as being either real-time
-or historical. Real-time data refers to recently ingested data;
-typically, in a production setting, this will be data for the current
-hour. Historical data refers to any data that is older. Segments can
-be similarly classified as being either real-time or historical.
-
-Historical segments are immutable and do not support insert, delete,
-or update semantics. By maintaining immutable blocks of data within
-the system, we can maintain a consistent snapshot of historical
-data and provide read consistency without having to worry about
-concurrent updates and deletes. If updates to a historical segment are
-required, we build a new segment for the same data source and time
-interval with the updated data. This new segment will have an updated version identifier.
-
-Multiple segments for the same data source and time range
-may exist in the system at any time. To provide read consistency,
-Druid read operations always access data in a particular time range
-from the segment with the latest version identifier for that time
-range. Historical segments may be stored on local disk or in a
-key-value “deep” store such as S3 \cite{decandia2007dynamo} or HDFS \cite{shvachko2010hadoop}. All historical
+Most segments in a Druid cluster will be immutable \emph{historical} segments. Such segments are persisted on local disk or in a distributed filesystem such as S3 \cite{decandia2007dynamo} or HDFS \cite{shvachko2010hadoop}. All historical
 segments have associated metadata describing properties of the segment
 such as size in bytes, compression format, and location in deep
-storage.
+storage. Data for intervals covered by historical segments can be updated by creating new historical segments that obsolete the old ones.
 
-Real-time segments are mutable and generally represent a much shorter
-duration of time than historical segments. Real-time segments contain
-recent data and are incrementally populated as new events are
-ingested. On a periodic basis, real-time segments are converted into
-historical segments. Additional details about this conversion process
-are given in Section~\ref{sec:realtime}.
+Segments covering very recent intervals will be mutable \emph{real-time} segments. Real-time segments are incrementally updated as new events are ingested. Periodically, real-time segments are converted into
+historical segments through a finalization and handoff process described in Section~\ref{sec:realtime}.
+
+Druid is best used for aggregating event streams, and both historical and real-time segments are built through an incremental indexing process that takes advantage of this assumption. Incremental indexing works by computing running aggregates of interesting metrics (number of impressions, sum of revenue, etc) across all rows that have identical attributes (publisher, advertiser, etc). This often produces an order of magnitude compression in the data without sacrificing analytical value. Of course, indexing raw data is an option as well.
 
 \section{Cluster}
 \label{sec:cluster}
@@ -249,22 +196,7 @@ and instead focus on maintaining cluster stability. Coordination nodes
 have an external dependency on a MySQL database.
 
 Druid relies on an Apache Zookeeper \cite{hunt2010zookeeper} cluster
-for coordination. This dependency is required because there is no
-direct communication between Druid nodes for the purposes of coordination. The
-following sections will discuss each Druid component in greater
-detail.
-
-\subsection{Apache Zookeeper}
-Zookeeper is a service for coordinating processes of distributed
-applications. Zookeeper provides connecting applications an
-abstraction of a hierarchy of data nodes known as znodes. Each znode
-is part of a hierarchical namespace, similar to file
-systems. Zookeeper has the concept of ephemeral and permanent
-znodes. Permanent nodes must be created and destroyed explicitly by a
-connecting application. Ephemeral znodes can be created by connecting
-applications and deleted either explicitly or if the session that
-created the znode is terminated (such as in the event of service
-failure).
+for coordination.
 
 \subsection{Historical Compute Nodes}
 Historical compute nodes are the main workers of a Druid cluster and
@@ -561,7 +493,7 @@ disk. In the example given in Table~\ref{tab:sample_data}, the
 publisher, advertiser, gender, and country columns only contain
 strings. String columns can be dictionary encoded. Dictionary encoding
 is a common method to compress data and has been used in other data
-stores such as Powerdrill \cite{hall2012processing}. In the example in
+stores such as PowerDrill \cite{hall2012processing}. In the example in
 Table~\ref{tab:sample_data}, we can map each publisher to an unique
 integer identifier.
 \begin{verbatim}
@@ -677,10 +609,7 @@ replicates in each tier of the historical compute cluster is fully
 configurable. Setups that require high levels of fault tolerance can
 be configured to have a high number of replicates. Replicates are
 assigned to compute nodes by coordination nodes using the same load
-distribution algorithm discussed in Section~\ref{sec:caching}. Conceptually,
-broker nodes do not distinguish historical segments from their
-replicates. Broker nodes forward queries to the first node it finds
-that contains data for the query.
+distribution algorithm discussed in Section~\ref{sec:caching}. Broker nodes forward queries to the first node they find that contain a segment required for the query.
 
 Real-time segments follow a different replication model as real-time
 segments are mutable. Recall that real-time nodes act as consumers of
@@ -689,32 +618,6 @@ bus if each maintains a unique offset, hence creating multiple copies
 of a real-time segment. If a real-time node fails and recovers, it can
 reload any indexes that were persisted to disk and read from the
 message bus from the point it last committed an offset.
-
-\subsection{Local Segment Cache}
-Recall that each Druid compute node maintains a local cache of
-historical segments it recently served. A compute node also has a
-lookup table for segments it has in its cache and stores this lookup
-table on disk. When a compute node is assigned a new segment to load,
-the compute node will first check its local segment cache directory to
-see if the segment had been previously downloaded. If a cache entry
-exists, the compute node will directly read the segment binary files
-and load the segment.
-
-The segment cache is also leveraged when a compute node is initially
-started. During startup, a compute node will first read its lookup
-table to determine what segments it has cached. All cached segments
-are immediately loaded and served. This feature introduces minimal
-overhead and allows a compute node to readily serve data as soon as it
-comes online. By making data quickly available on startup and
-minimizing initial startup time, compute nodes that become
-inexplicably disconnected from the cluster can reconnect themselves
-seamlessly. This also means that software updates can be pushed to
-compute nodes without disruption to cluster operations. In practice, a
-software update to a compute node can be completed before coordination
-nodes even notice that the compute node has disconnected. At
-Metamarkets, we update Druid through rolling restarts. Compute nodes
-are updated one at a time and we experience no downtime or data loss
-through the update process.
 
 \subsection{Failure Detection}
 If a compute node completely fails and becomes unavailable, the
@@ -829,11 +732,11 @@ values and scan over them, increasing the amount of memory scanned.
 \label{sec:related}
 Cattell \cite{cattell2011scalable} maintains a great summary about existing Scalable SQL and
 NoSQL data stores. In the landscape of distributed data stores, Druid
-feature-wise sits somewhere between Google’s Dremel \cite{melnik2010dremel} and Powerdrill
+feature-wise sits somewhere between Google’s Dremel \cite{melnik2010dremel} and PowerDrill
 \cite{hall2012processing}. Druid has most of the features implemented in Dremel (Dremel
 handles arbitrary nested data structures while Druid only allows for a
 single level of array-based nesting) and many of the interesting
-compression algorithms mentioned in Powerdrill.
+compression algorithms mentioned in PowerDrill.
 
 Although Druid builds on many of the same principles as other
 distributed column-oriented data stores \cite{fink2012distributed}, most existing data
